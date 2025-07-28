@@ -11,29 +11,28 @@ fi
 
 # Check if Hardhat is installed
 echo "Checking if Hardhat is installed..."
-if ! npx --no-install hardhat > /dev/null 2>&1; then
+if ! npx --no-install hardhat >/dev/null 2>&1; then
   echo "Error: Hardhat is not installed. Run: npx hardhat" >&2
   exit 1
 fi
 
-
 echo "Cleaning up previous data"
 
 # Clean up containers
-docker rm -f besu-node-0 besu-node-1 besu-node-2 besu-node-3 
+docker rm -f besu-node-0 besu-node-1 besu-node-2 besu-node-3
 
 # Clean up data dir from each node
-rm -rf node/besu-0/data
-rm -rf node/besu-1/data
-rm -rf node/besu-2/data
-rm -rf node/besu-3/data
+sudo rm -rf node/besu-0/data
+sudo rm -rf node/besu-1/data
+sudo rm -rf node/besu-2/data
+sudo rm -rf node/besu-3/data
 
-rm -rf genesis
-rm -rf ignition/deployments
-rm -rf artifacts
-rm -rf cache
+sudo rm -rf genesis
+sudo rm -rf ignition/deployments
+sudo rm -rf artifacts
+sudo rm -rf cache
 
-rm -rf _tmp
+sudo rm -rf _tmp
 
 # Recreate data dir for each node
 mkdir -p node/besu-0/data
@@ -47,7 +46,7 @@ besu operator generate-blockchain-config --config-file=../config/qbftConfigFile.
 
 cd ..
 
-counter=0  # Initialize the counter
+counter=0 # Initialize the counter
 # Copy keys to each node
 for folder in _tmp/networkFiles/keys/*; do
   folderName=$(basename "$folder")
@@ -75,7 +74,7 @@ jq '.alloc += {
     "comment": "This is Bob'\''s Key. Private key and this comment are ignored. In a real chain, the private key should NOT be stored",
     "balance": "90000000000000000000000"
   }
-}' genesis/genesis.json > temp.json && mv temp.json genesis/genesis.json
+}' genesis/genesis.json >temp.json && mv temp.json genesis/genesis.json
 
 rm -rf _tmp
 
@@ -84,7 +83,7 @@ if ! docker network ls | grep -q besu_network; then
 fi
 
 echo "Starting bootnode"
-docker-compose -f docker/docker-compose-bootnode.yaml up -d
+docker compose -f docker/docker-compose-bootnode.yaml up -d || docker-compose -f docker/docker-compose-bootnode.yaml up -d
 
 # Retrieve bootnode enode address
 max_retries=30
@@ -117,10 +116,10 @@ export DOCKER_NODE_1_ADDRESS=$(docker inspect -f '{{range .NetworkSettings.Netwo
 export E_ADDRESS=$(echo $E_ADDRESS | sed -e "s/127.0.0.1/$DOCKER_NODE_1_ADDRESS/g")
 echo $E_ADDRESS
 
-sed "s/<ENODE>/enode:\/\/$E_ADDRESS/g" docker/templates/docker-compose-nodes.yaml > docker/docker-compose-nodes.yaml
+sed "s/<ENODE>/enode:\/\/$E_ADDRESS/g" docker/templates/docker-compose-nodes.yaml >docker/docker-compose-nodes.yaml
 
 echo "Starting nodes"
-docker-compose -f docker/docker-compose-nodes.yaml up -d
+docker compose -f docker/docker-compose-nodes.yaml up -d || docker-compose -f docker/docker-compose-nodes.yaml up -d
 
 echo "============================="
 echo "Network started successfully!"
@@ -139,6 +138,6 @@ npx hardhat compile
 cd ..
 
 echo "Deploying contract..."
-npx hardhat ignition deploy ./ignition/modules/deploy.js --network besu << EOF
+npx hardhat ignition deploy ./ignition/modules/deploy.js --network besu <<EOF
 y
 EOF
