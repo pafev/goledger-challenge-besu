@@ -1,6 +1,7 @@
 package smartContractDomain
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -17,18 +18,19 @@ import (
 
 type SmartContractRepository struct {
 	db            *dbConfig.DB
+	ctx           *context.Context
 	abi           *abi.ABI
 	boundContract *bind.BoundContract
 	address       common.Address
 	smartContract *SmartContractDB // instanciado aqui pois nesse escopo o contrato eh uma instancia fixa
 }
 
-func NewRepository(db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepository, error) {
+func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepository, error) {
 	data, err := os.ReadFile(os.Getenv("SMART_CONTRACT_ABI_PATH"))
 	if err != nil {
 		return nil, err
 	}
-	var contractDefinition map[any]any
+	var contractDefinition map[string]any
 	json.Unmarshal(data, &contractDefinition)
 	data, err = json.Marshal(contractDefinition["abi"])
 	if err != nil {
@@ -55,6 +57,7 @@ func NewRepository(db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContrac
 
 	return &SmartContractRepository{
 		db:            db,
+		ctx:           ctx,
 		abi:           &abi,
 		boundContract: boundContract,
 		address:       contractAddress,
@@ -69,7 +72,16 @@ func NewRepository(db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContrac
 }
 
 func (r *SmartContractRepository) GetValue() ([]any, error) {
-	return []any{0}, nil
+	caller := bind.CallOpts{
+		Pending: false,
+		Context: *r.ctx,
+	}
+	var result []any
+	err := r.boundContract.Call(&caller, &result, "get")
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 func (r *SmartContractRepository) SetValue() error {
 	return nil
