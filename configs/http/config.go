@@ -1,14 +1,17 @@
 package httpConfig
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 
+	"goledger-challenge-besu/configs/besu"
+	"goledger-challenge-besu/configs/db"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-
 	sloggin "github.com/samber/slog-gin"
 )
 
@@ -20,7 +23,7 @@ type HTTP struct {
 	AllowedOrigins string
 }
 
-func (r *HTTP) Route() error {
+func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfig.EthClient) error {
 	// (DI) Dependency Injection
 
 	// Routes

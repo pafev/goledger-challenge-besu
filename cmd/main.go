@@ -43,11 +43,11 @@ func main() {
 	slog.Info("Database migrated succesfully")
 
 	slog.Info("Connecting to Besu node...")
-	client, err := besuConfig.New(&ctx)
+	ethClient, err := besuConfig.New(&ctx)
 	if err != nil {
 		slog.Error("Erro connecting to besu node", "error", err)
 	}
-	defer client.Close()
+	defer ethClient.Close()
 	slog.Info("Besu node connected succesfully")
 
 	slog.Info("Starting the HTTP server...")
@@ -57,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = http.Route()
+	err = http.Route(&ctx, db, ethClient)
 	if err != nil {
 		slog.Error("Error building the HTTP routes", "error", err)
 		os.Exit(1)
