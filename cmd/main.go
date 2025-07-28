@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"goledger-challenge-besu/configs/app"
 	"goledger-challenge-besu/configs/besu"
 	"goledger-challenge-besu/configs/db"
+	"goledger-challenge-besu/configs/http"
 )
 
 func main() {
@@ -47,4 +49,26 @@ func main() {
 	}
 	defer client.Close()
 	slog.Info("Besu node connected succesfully")
+
+	slog.Info("Starting the HTTP server...")
+	http, err := httpConfig.New()
+	if err != nil {
+		slog.Error("Error trying setup the HTTP server", "error", err)
+		os.Exit(1)
+	}
+
+	err = http.Route()
+	if err != nil {
+		slog.Error("Error building the HTTP routes", "error", err)
+		os.Exit(1)
+	}
+
+	fmt.Println()
+	slog.Info("\nHTTP Server running\n", "address", fmt.Sprintf("http://%s", http.Address), "port", http.Port)
+	fmt.Println()
+	err = http.Serve()
+	if err != nil {
+		slog.Error("Error starting the HTTP server", "error", err)
+		os.Exit(1)
+	}
 }
