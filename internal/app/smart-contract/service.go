@@ -27,8 +27,13 @@ func (r *SmartContractService) GetValue() (*big.Int, error) {
 func (r *SmartContractService) SetValue() error {
 	return nil
 }
-func (r *SmartContractService) CheckValue() (bool, error) {
-	return false, nil
+func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {
+	// para multiplas requisicoes, poderia ser implementado um sistema de cache
+	isEqual, err := r.repository.CheckValue(value)
+	if err != nil {
+		return false, nil
+	}
+	return isEqual, nil
 }
 func (r *SmartContractService) SyncValue() error {
 	return nil
