@@ -40,6 +40,7 @@ func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfi
 		smartContract := v1.Group("/smart-contract")
 		{
 			smartContract.GET("", smartContractHandler.GetValue)
+			smartContract.GET("/check-value/:value", smartContractHandler.CheckValue)
 		}
 	}
 	return nil

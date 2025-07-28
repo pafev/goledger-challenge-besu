@@ -1,6 +1,7 @@
 package smartContractApp
 
 import (
+	"math/big"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,8 +27,17 @@ func (r *SmartContractHandler) GetValue(ctx *gin.Context) {
 func (r *SmartContractHandler) SetValue() error {
 	return nil
 }
-func (r *SmartContractHandler) CheckValue() (bool, error) {
-	return false, nil
+func (r *SmartContractHandler) CheckValue(ctx *gin.Context) {
+	valueStr := ctx.Param("value")
+	value, ok := new(big.Int).SetString(valueStr, 10)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, "Invalid param value")
+	}
+	isEqual, err := r.service.CheckValue(value)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+	}
+	ctx.JSON(http.StatusOK, isEqual)
 }
 func (r *SmartContractHandler) SyncValue() error {
 	return nil
