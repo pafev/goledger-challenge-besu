@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"goledger-challenge-besu/configs/app"
-	dbConfig "goledger-challenge-besu/configs/db"
+	"goledger-challenge-besu/configs/besu"
+	"goledger-challenge-besu/configs/db"
 )
 
 func main() {
@@ -38,4 +39,12 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Info("Database migrated succesfully")
+
+	slog.Info("Connecting to Besu node...")
+	client, err := besuConfig.New(&ctx)
+	if err != nil {
+		slog.Error("Erro connecting to besu node", "error", err)
+	}
+	defer client.Close()
+	slog.Info("Besu node connected succesfully")
 }
