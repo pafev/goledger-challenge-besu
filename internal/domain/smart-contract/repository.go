@@ -90,8 +90,12 @@ func (r *SmartContractRepository) GetValue() (*big.Int, error) {
 func (r *SmartContractRepository) SetValue() error {
 	return nil
 }
-func (r *SmartContractRepository) CheckValue() (bool, error) {
-	return false, nil
+func (r *SmartContractRepository) CheckValue(value *big.Int) (bool, error) {
+	correctValue, err := r.GetValue()
+	if err != nil {
+		return false, err
+	}
+	return correctValue.Cmp(value) == 0, nil
 }
 func (r *SmartContractRepository) SyncValue() error {
 	return nil
