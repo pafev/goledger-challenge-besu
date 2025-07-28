@@ -11,7 +11,7 @@ import (
 type SmartContractDB struct {
 	SmartContractId uint64
 	Address         string
-	Value           string
+	Value           [4]uint64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
