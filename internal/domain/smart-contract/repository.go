@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"goledger-challenge-besu/configs/besu"
+	dbConfig "goledger-challenge-besu/configs/db"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,11 +16,14 @@ import (
 )
 
 type SmartContractRepository struct {
-	SmartContractDB   *SmartContractDB
-	SmartContractBesu *SmartContractBesu
+	db            *dbConfig.DB
+	abi           *abi.ABI
+	boundContract *bind.BoundContract
+	address       common.Address
+	smartContract *SmartContractDB // instanciado aqui pois nesse escopo o contrato eh uma instancia fixa
 }
 
-func NewRepository(client *besuConfig.EthClient) (*SmartContractRepository, error) {
+func NewRepository(db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepository, error) {
 	data, err := os.ReadFile(os.Getenv("SMART_CONTRACT_ABI_PATH"))
 	if err != nil {
 		return nil, err
@@ -50,17 +54,16 @@ func NewRepository(client *besuConfig.EthClient) (*SmartContractRepository, erro
 	)
 
 	return &SmartContractRepository{
-		&SmartContractDB{
+		db:            db,
+		abi:           &abi,
+		boundContract: boundContract,
+		address:       contractAddress,
+		smartContract: &SmartContractDB{
 			SmartContractId: 1,
 			Address:         contractHexAddress,
 			Value:           [4]uint64{0},
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
-		},
-		&SmartContractBesu{
-			Abi:           &abi,
-			BoundContract: boundContract,
-			Address:       contractAddress,
 		},
 	}, nil
 }
