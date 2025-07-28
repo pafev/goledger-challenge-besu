@@ -9,6 +9,8 @@ import (
 
 	"goledger-challenge-besu/configs/besu"
 	"goledger-challenge-besu/configs/db"
+	"goledger-challenge-besu/internal/app/smart-contract"
+	"goledger-challenge-besu/internal/domain/smart-contract"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -24,10 +26,22 @@ type HTTP struct {
 }
 
 func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfig.EthClient) error {
-	// (DI) Dependency Injection
+	// (DI) Dependency Injection and Middlewares
+	smartContractRepo, err := smartContractDomain.NewRepository(ctx, db, ethClient)
+	if err != nil {
+		return err
+	}
+	smartContractService := smartContractApp.NewService(smartContractRepo)
+	smartContractHandler := smartContractApp.NewHandler(smartContractService)
 
 	// Routes
-	r.Group("/api/v1")
+	v1 := r.Group("/api/v1")
+	{
+		smartContract := v1.Group("/smart-contract")
+		{
+			smartContract.GET("", smartContractHandler.GetValue)
+		}
+	}
 	return nil
 }
 
@@ -49,7 +63,7 @@ func New() (*HTTP, error) {
 	ginConfig.AllowOrigins = strings.Split(allowedOrigins, ",")
 	router := gin.New()
 
-	// Middlewares
+	// Global Middlewares
 	router.Use(sloggin.New(slog.Default()), gin.Recovery(), cors.New(ginConfig))
 
 	return &HTTP{

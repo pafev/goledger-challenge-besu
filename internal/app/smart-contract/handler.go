@@ -1,9 +1,27 @@
 package smartContractApp
 
-type SmartContractHandler struct{}
+import (
+	"net/http"
 
-func (r *SmartContractHandler) GetValue() ([]any, error) {
-	return []any{0}, nil
+	"github.com/gin-gonic/gin"
+)
+
+type SmartContractHandler struct {
+	// aqui sao feitos os tratamentos http por cima do service
+	service *SmartContractService
+}
+
+func NewHandler(service *SmartContractService) *SmartContractHandler {
+	return &SmartContractHandler{service}
+}
+
+func (r *SmartContractHandler) GetValue(ctx *gin.Context) {
+	value, err := r.service.GetValue()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, value)
 }
 func (r *SmartContractHandler) SetValue() error {
 	return nil
