@@ -21,7 +21,7 @@ func (r *SmartContractHandler) GetValue(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, value)
+	ctx.JSON(http.StatusOK, value.String())
 }
 func (r *SmartContractHandler) SetValue() error {
 	return nil

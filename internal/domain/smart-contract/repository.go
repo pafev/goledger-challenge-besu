@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"os"
 	"strings"
 	"time"
 
 	"goledger-challenge-besu/configs/besu"
 	dbConfig "goledger-challenge-besu/configs/db"
+	"goledger-challenge-besu/internal/domain"
 
+	"github.com/core-coin/uint256"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -64,23 +67,24 @@ func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.Eth
 		smartContract: &SmartContractDB{
 			SmartContractId: 1,
 			Address:         contractHexAddress,
-			Value:           [4]uint64{0},
+			Value:           uint256.Int{0},
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		},
 	}, nil
 }
 
-func (r *SmartContractRepository) GetValue() ([]any, error) {
+func (r *SmartContractRepository) GetValue() (*big.Int, error) {
 	caller := bind.CallOpts{
 		Pending: false,
 		Context: *r.ctx,
 	}
-	var result []any
-	err := r.boundContract.Call(&caller, &result, "get")
+	var output []any
+	err := r.boundContract.Call(&caller, &output, "get")
 	if err != nil {
-		return nil, err
+		return new(big.Int), domain.ErrInternal
 	}
+	result := *abi.ConvertType(output[0], new(*big.Int)).(**big.Int)
 	return result, nil
 }
 func (r *SmartContractRepository) SetValue() error {

@@ -1,6 +1,10 @@
 package smartContractApp
 
-import smartContractDomain "goledger-challenge-besu/internal/domain/smart-contract"
+import (
+	"math/big"
+
+	"goledger-challenge-besu/internal/domain/smart-contract"
+)
 
 type SmartContractService struct {
 	// aqui eh possivel consumir outros repositories ou executar funcoes de cache por cima
@@ -11,11 +15,12 @@ func NewService(repository *smartContractDomain.SmartContractRepository) *SmartC
 	return &SmartContractService{repository}
 }
 
-func (r *SmartContractService) GetValue() ([]any, error) {
+func (r *SmartContractService) GetValue() (*big.Int, error) {
 	// para multiplas requisicoes, poderia ser implementado um sistema de cache
+	// ou um metodo de service que chamasse repository de mais de um tipo de contrato
 	value, err := r.repository.GetValue()
 	if err != nil {
-		return nil, err
+		return new(big.Int), err
 	}
 	return value, nil
 }
