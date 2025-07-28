@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	"goledger-challenge-besu/configs/app"
 	"goledger-challenge-besu/configs/besu"
@@ -22,8 +21,7 @@ func main() {
 	}
 	slog.Info("Application started", "app", app.Name, "env", app.Env)
 
-	ctx, cancelCtx := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelCtx()
+	ctx := context.Background()
 
 	slog.Info("Connecting to database...")
 	db, err := dbConfig.New(&ctx)
