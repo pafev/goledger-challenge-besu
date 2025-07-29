@@ -214,7 +214,7 @@ Antes de executar a aplicação, certifique-se de ter instalado:
 │   └── db/
 │       ├── config.go
 │   └── http/
-│       ├── config.go                 # aqui há as rotas e área para Dependency Injection (DI) da api
+│       └── config.go                 # aqui há as rotas e área para Dependency Injection (DI) da api
 ├── internal/
 │   └── app/
 │       └── smart_contract/
@@ -224,7 +224,7 @@ Antes de executar a aplicação, certifique-se de ter instalado:
 │       └── smart_contract/
 │           ├── repository-besu.go    # Interface do repository para o cliente Besu
 │           ├── repository-db.go      # Interface do repository para o cliente Postgres
-│           ├── model.go              # Entidades
+│           └── model.go              # Entidades
 ├── scripts/                          # Scripts de inicialização
 │   ├── besu/
 │   └── db/
