@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type SmartContractRepository struct {
@@ -25,6 +26,7 @@ type SmartContractRepository struct {
 	abi           *abi.ABI
 	boundContract *bind.BoundContract
 	address       common.Address
+	client        *besuConfig.EthClient
 	smartContract *SmartContractDB // instanciado aqui pois nesse escopo o contrato eh uma instancia fixa
 }
 
@@ -64,6 +66,7 @@ func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.Eth
 		abi:           &abi,
 		boundContract: boundContract,
 		address:       contractAddress,
+		client:        client,
 		smartContract: &SmartContractDB{
 			SmartContractId: 1,
 			Address:         contractHexAddress,
@@ -87,7 +90,38 @@ func (r *SmartContractRepository) GetValue() (*big.Int, error) {
 	result := *abi.ConvertType(output[0], new(*big.Int)).(**big.Int)
 	return result, nil
 }
-func (r *SmartContractRepository) SetValue() error {
+func (r *SmartContractRepository) SetValue(value *big.Int) error {
+	chainId, err := r.client.ChainID(*r.ctx)
+	if err != nil {
+		return domain.ErrInternal
+	}
+
+	priv, err := crypto.HexToECDSA("8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+	if err != nil {
+		return domain.ErrInternal
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(priv, chainId)
+	if err != nil {
+		return domain.ErrInternal
+	}
+
+	tx, err := r.boundContract.Transact(auth, "set", value)
+	if err != nil {
+		return domain.ErrInternal
+	}
+
+	tx.Hash().Hex()
+
+	_, err = bind.WaitMined(
+		context.Background(),
+		r.client,
+		tx,
+	)
+	if err != nil {
+		return domain.ErrInternal
+	}
+
 	return nil
 }
 func (r *SmartContractRepository) CheckValue(value *big.Int) (bool, error) {
