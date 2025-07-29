@@ -24,8 +24,10 @@ func (r *SmartContractService) GetValue() (*big.Int, error) {
 	}
 	return value, nil
 }
-func (r *SmartContractService) SetValue() error {
-	return nil
+func (r *SmartContractService) SetValue(value *big.Int) error {
+	// seria possivel colocar validacoes sobre o valor, antes de passar ao repository
+	err := r.repository.SetValue(value)
+	return err
 }
 func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {
 	// para multiplas requisicoes, poderia ser implementado um sistema de cache
