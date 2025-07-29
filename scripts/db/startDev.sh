@@ -11,10 +11,10 @@ else
   exit 1
 fi
 
-docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down
-docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down -v
+docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down || docker-compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down
+docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down -v || docker-compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down -v
 
-docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" up -d
+docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" up -d || docker-compose -f "$CWD_PATH/scripts/db/docker-compose.yml" up -d
 
 while ! docker exec goledger_challenge_db pg_isready -U postgres -d goledger_challenge >/dev/null 2>&1; do
   sleep 2
@@ -22,6 +22,7 @@ done
 
 sed -i "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable|" "$CWD_PATH/.env"
 
+echo ""
 echo "URL = postgresql://user:pass@localhost:5432/goledger_challenge"
 echo ""
 echo "to interact to psql shell:"
