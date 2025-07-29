@@ -75,17 +75,17 @@ Este padrão permite que a lógica de negócio seja independente dos detalhes de
 
 A aplicação expõe quatro endpoints REST com tratamento personalizado de erros:
 
-### GET /api/v1/smart-contracts/
+### GET /api/v1/smart-contract/
 **Função**: Recupera o valor atual armazenado no smart contract
 **Ação**: Realiza uma chamada de leitura diretamente na blockchain
 **Retorno**: JSON com o valor atual do contrato
 
-### GET /api/v1/smart-contracts/check-value/:value
+### GET /api/v1/smart-contract/check-value/:value
 **Função**: Compara o valor do smart contract com o valor fornecido na rota
 **Parâmetros**: `value` - valor a ser comparado via URL parameter
 **Retorno**: JSON indicando se os valores são iguais (`true`/`false`)
 
-### POST /api/v1/smart-contracts/set-value
+### POST /api/v1/smart-contract/set-value
 **Função**: Define um novo valor no smart contract
 **Body**: JSON contendo:
 ```json
@@ -97,7 +97,7 @@ A aplicação expõe quatro endpoints REST com tratamento personalizado de erros
 **Ação**: Envia uma transação para a blockchain atualizando o valor
 **Retorno**: JSON confirmando a transação
 
-### POST /api/v1/smart-contracts/sync
+### POST /api/v1/smart-contract/sync
 **Função**: Sincroniza o valor do smart contract com o banco de dados PostgreSQL
 **Ação**: Lê o valor atual da blockchain e armazena/atualiza no banco de dados
 **Retorno**: JSON confirmando a sincronização
