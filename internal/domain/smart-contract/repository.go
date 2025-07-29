@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 	"os"
 	"strings"
@@ -70,7 +69,7 @@ func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.Eth
 		client:        client,
 		smartContract: &SmartContractDB{
 			Address:   contractHexAddress,
-			Value:     *new(big.Int),
+			Value:     *new(uint64),
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
@@ -123,7 +122,7 @@ func (r *SmartContractRepository) SetValue(value *big.Int, privateKey string) er
 	}
 
 	// updatedAt sera atualizado mediante trigger no db com o metodo de sync
-	r.smartContract.Value = *value
+	r.smartContract.Value = value.Uint64()
 
 	return nil
 }
@@ -163,7 +162,6 @@ func (r *SmartContractRepository) SyncValue() error {
 		&r.smartContract.CreatedAt,
 		&r.smartContract.UpdatedAt,
 	)
-	fmt.Println("\nCheguei aqui", err)
 	if err != nil {
 		if errCode := r.db.ErrorCode(err); errCode == "23505" {
 			return domain.ErrConflictingData

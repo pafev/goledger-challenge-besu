@@ -1,14 +1,13 @@
 package smartContractDomain
 
 import (
-	"math/big"
 	"time"
 )
 
 type SmartContractDB struct {
 	SmartContractId uint64
 	Address         string
-	Value           big.Int
+	Value           uint64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
