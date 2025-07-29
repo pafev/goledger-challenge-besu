@@ -32,8 +32,8 @@ func NewRepositoryDB(ctx *context.Context, db *dbConfig.DB, client *besuConfig.E
 		SmartContract: &SmartContractDB{
 			Address:   contractHexAddress,
 			Value:     *new(uint64),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt: *new(time.Time),
+			UpdatedAt: *new(time.Time),
 		},
 	}, nil
 }

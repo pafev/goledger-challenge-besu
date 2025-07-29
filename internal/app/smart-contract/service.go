@@ -7,7 +7,6 @@ import (
 )
 
 type SmartContractService struct {
-	// here, its possible to consume other repositories or perform cache functions on top
 	repositoryDB   *smartContractDomain.SmartContractRepositoryDB
 	repositoryBesu *smartContractDomain.SmartContractRepositoryBesu
 }
@@ -25,7 +24,8 @@ func (r *SmartContractService) GetValue() (*big.Int, error) {
 	if err != nil {
 		return new(big.Int), err
 	}
-	if value.Cmp(new(big.Int).SetUint64(r.repositoryDB.SmartContract.Value)) != 0 {
+	// if the repositoryDB singleton has never been updated
+	if r.repositoryDB.SmartContract.UpdatedAt.IsZero() {
 		r.repositoryDB.SmartContract.Value = value.Uint64()
 	}
 	return value, nil
@@ -37,6 +37,7 @@ func (r *SmartContractService) SetValue(value *big.Int, privateKey string) error
 	if err != nil {
 		return err
 	}
+	// automatically updates the singleton of the repositoryDB
 	if value.Cmp(new(big.Int).SetUint64(r.repositoryDB.SmartContract.Value)) != 0 {
 		r.repositoryDB.SmartContract.Value = value.Uint64()
 	}
@@ -44,7 +45,7 @@ func (r *SmartContractService) SetValue(value *big.Int, privateKey string) error
 }
 
 func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {
-	// For multiple requests, a cache system could be implemented
+	// for multiple requests, a cache system could be implemented
 	isEqual, err := r.repositoryBesu.CheckValue(value)
 	if err != nil {
 		return false, nil
@@ -53,6 +54,14 @@ func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {
 }
 
 func (r *SmartContractService) SyncValue() error {
+	// if the repositoryDB singleton has never been updated
+	if r.repositoryDB.SmartContract.UpdatedAt.IsZero() {
+		value, err := r.repositoryBesu.GetValue()
+		if err != nil {
+			return err
+		}
+		r.repositoryDB.SmartContract.Value = value.Uint64()
+	}
 	err := r.repositoryDB.SyncValue()
 	return err
 }
