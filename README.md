@@ -4,6 +4,85 @@
 
 Implementação pessoal (Paulo Fernando Vilarim) para o desafio técnico da GoLedger, que consiste em criar uma aplicação Go que interage com uma rede blockchain Hyperledger Besu QBFT. A aplicação deve ser capaz de interagir com smart contracts deployados na rede Besu, gerenciar valores de variáveis do smart contract, sincronizar dados entre blockchain e banco de dados SQL (Postgres na atual implementação), e expor funcionalidades através de uma API REST.
 
+## Como Executar
+
+### 1. Configuração do Ambiente
+
+Gere o arquivo de variáveis de ambiente a partir do template:
+
+```bash
+cp .env.example .env
+```
+
+### 2. Inicialização do Cliente Besu
+
+Execute os seguintes comandos para inicializar a rede Besu local:
+
+```bash
+cd scripts/besu
+chmod +x ./startDev.sh
+./startDev.sh
+cd ../..
+```
+
+Este comando irá:
+- Inicializar uma rede Besu local com 4 nós
+- Deployar o smart contract SimpleStorage
+- Exibir o endereço do contrato (anote este endereço para configurar no .env)
+
+### 3. Inicialização do Banco de Dados
+
+Execute o script para inicializar o PostgreSQL:
+
+```bash
+chmod +x ./scripts/db/startDev.sh
+./scripts/db/startDev.sh
+```
+
+Este comando irá:
+- Inicializar uma container com um banco de dados Postgres 1.17 operando
+- Exibir a URL do banco de dados (automatizei a passagem da URL para o .env, mas anote esta URL para confirmar no .env)
+Obs.: se optar por rodar o banco de dados locamente, deve haver no .env a query param `?sslmode=disable` adicionada à URL do banco de dados. Verifique
+
+### 4. Configuração das Variáveis de Ambiente
+
+Complete o arquivo `.env` com as informações obtidas nos passos anteriores. Dele deve ficar mais ou menos assim:
+
+```env
+# Informações da aplicação
+APP_NAME=goledger-challenge-besu
+APP_DOMAIN="localhost" # localhost for development env
+APP_ENV="development"  # development or stage or production
+APP_PORT=5000
+
+# Configuração do Banco de Dados
+DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable
+
+# Configurações da rede Besu
+BESU_URL=http://localhost:8545 # http://localhost:8545 for development env
+SMART_CONTRACT_ADDR="<endereco_do_contrato_deployado>"
+SMART_CONTRACT_ABI_PATH="scripts/besu/artifacts/contracts/SimpleStorage.sol/SimpleStorage.json"
+```
+
+### 5. Instalação de Dependências
+
+Baixe as dependências do Go:
+
+```bash
+go mod download
+go mod tidy
+```
+
+### 6. Execução da Aplicação
+
+Execute a aplicação:
+
+```bash
+go run cmd/main.go
+```
+
+A aplicação estará disponível em `http://localhost:8080`.
+
 ## Sobre as Tecnologias
 
 ### Hyperledger Besu
@@ -121,85 +200,6 @@ Antes de executar a aplicação, certifique-se de ter instalado:
 - Docker e Docker Compose (verificar se Docker Compose está atualizado)
 - Hardhat
 - Hyperledger Besu
-
-## Como Executar
-
-### 1. Configuração do Ambiente
-
-Gere o arquivo de variáveis de ambiente a partir do template:
-
-```bash
-cp .env.example .env
-```
-
-### 2. Inicialização do Cliente Besu
-
-Execute os seguintes comandos para inicializar a rede Besu local:
-
-```bash
-cd scripts/besu
-chmod +x ./startDev.sh
-./startDev.sh
-cd ../..
-```
-
-Este comando irá:
-- Inicializar uma rede Besu local com 4 nós
-- Deployar o smart contract SimpleStorage
-- Exibir o endereço do contrato (anote este endereço para configurar no .env)
-
-### 3. Inicialização do Banco de Dados
-
-Execute o script para inicializar o PostgreSQL:
-
-```bash
-chmod +x ./scripts/db/startDev.sh
-./scripts/db/startDev.sh
-```
-
-Este comando irá:
-- Inicializar uma container com um banco de dados Postgres 1.17 operando
-- Exibir a URL do banco de dados (automatizei a passagem da URL para o .env, mas anote esta URL para confirmar no .env)
-Obs.: se optar por rodar o banco de dados locamente, deve haver no .env a query param `?sslmode=disable` adicionada à URL do banco de dados. Verifique
-
-### 4. Configuração das Variáveis de Ambiente
-
-Complete o arquivo `.env` com as informações obtidas nos passos anteriores. Dele deve ficar mais ou menos assim:
-
-```env
-# Informações da aplicação
-APP_NAME=goledger-challenge-besu
-APP_DOMAIN="localhost" # localhost for development env
-APP_ENV="development"  # development or stage or production
-APP_PORT=5000
-
-# Configuração do Banco de Dados
-DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable
-
-# Configurações da rede Besu
-BESU_URL=http://localhost:8545 # http://localhost:8545 for development env
-SMART_CONTRACT_ADDR="<endereco_do_contrato_deployado>"
-SMART_CONTRACT_ABI_PATH="scripts/besu/artifacts/contracts/SimpleStorage.sol/SimpleStorage.json"
-```
-
-### 5. Instalação de Dependências
-
-Baixe as dependências do Go:
-
-```bash
-go mod download
-go mod tidy
-```
-
-### 6. Execução da Aplicação
-
-Execute a aplicação:
-
-```bash
-go run cmd/main.go
-```
-
-A aplicação estará disponível em `http://localhost:8080`.
 
 ## Estrutura do Projeto
 
