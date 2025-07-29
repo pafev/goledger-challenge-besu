@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"os"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	dbConfig "goledger-challenge-besu/configs/db"
 	"goledger-challenge-besu/internal/domain"
 
-	"github.com/core-coin/uint256"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -68,11 +69,10 @@ func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.Eth
 		address:       contractAddress,
 		client:        client,
 		smartContract: &SmartContractDB{
-			SmartContractId: 1,
-			Address:         contractHexAddress,
-			Value:           uint256.Int{0},
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			Address:   contractHexAddress,
+			Value:     *new(big.Int),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		},
 	}, nil
 }
@@ -122,6 +122,9 @@ func (r *SmartContractRepository) SetValue(value *big.Int, privateKey string) er
 		return domain.ErrInternal
 	}
 
+	// updatedAt sera atualizado mediante trigger no db com o metodo de sync
+	r.smartContract.Value = *value
+
 	return nil
 }
 func (r *SmartContractRepository) CheckValue(value *big.Int) (bool, error) {
@@ -132,5 +135,40 @@ func (r *SmartContractRepository) CheckValue(value *big.Int) (bool, error) {
 	return correctValue.Cmp(value) == 0, nil
 }
 func (r *SmartContractRepository) SyncValue() error {
+	var (
+		sql  string
+		args []any
+		err  error
+	)
+	alreadyExists := r.smartContract.SmartContractId != 0
+
+	if alreadyExists {
+		query := r.db.QueryBuilder.Update("smart_contracts").Set("value", r.smartContract.Value).Where(sq.Eq{"smart_contract_id": r.smartContract.SmartContractId}).Suffix("RETURNING *")
+		sql, args, err = query.ToSql()
+		if err != nil {
+			return domain.ErrInternal
+		}
+	} else {
+		query := r.db.QueryBuilder.Insert("smart_contracts").Columns("address", "value").Values(r.smartContract.Address, r.smartContract.Value).Suffix("RETURNING *")
+		sql, args, err = query.ToSql()
+		if err != nil {
+			return domain.ErrInternal
+		}
+	}
+
+	err = r.db.QueryRow(*r.ctx, sql, args...).Scan(
+		&r.smartContract.SmartContractId,
+		&r.smartContract.Address,
+		&r.smartContract.Value,
+		&r.smartContract.CreatedAt,
+		&r.smartContract.UpdatedAt,
+	)
+	fmt.Println("\nCheguei aqui", err)
+	if err != nil {
+		if errCode := r.db.ErrorCode(err); errCode == "23505" {
+			return domain.ErrConflictingData
+		}
+		return domain.ErrInternal
+	}
 	return nil
 }
