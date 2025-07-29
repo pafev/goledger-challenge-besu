@@ -6,31 +6,33 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"goledger-challenge-besu/configs/besu"
-	dbConfig "goledger-challenge-besu/configs/db"
 	"goledger-challenge-besu/internal/domain"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/jackc/pgx/v5"
 )
 
-type SmartContractRepository struct {
-	db            *dbConfig.DB
+type SmartContractRepositoryBesu struct {
 	ctx           *context.Context
 	abi           *abi.ABI
 	boundContract *bind.BoundContract
 	address       common.Address
 	client        *besuConfig.EthClient
-	smartContract *SmartContractDB // instantiated here because in this scope the contract is a fixed instance
 }
 
-func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepository, error) {
+// NewRepositoryBesu initializes a new instance of SmartContractRepositoryBesu.
+// Parameters:
+//   - ctx: The context for contract operations.
+//   - client: The Ethereum client configuration.
+//
+// Returns:
+//   - A pointer to SmartContractRepositoryBesu if successful.
+//   - An error if there is an issue with the ABI or contract address.
+func NewRepositoryBesu(ctx *context.Context, client *besuConfig.EthClient) (*SmartContractRepositoryBesu, error) {
 	data, err := os.ReadFile(os.Getenv("SMART_CONTRACT_ABI_PATH"))
 	if err != nil {
 		return nil, domain.ErrAbiNotFound
@@ -60,23 +62,20 @@ func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.Eth
 		client,
 	)
 
-	return &SmartContractRepository{
-		db:            db,
+	return &SmartContractRepositoryBesu{
 		ctx:           ctx,
 		abi:           &abi,
 		boundContract: boundContract,
 		address:       contractAddress,
 		client:        client,
-		smartContract: &SmartContractDB{
-			Address:   contractHexAddress,
-			Value:     *new(uint64),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
 	}, nil
 }
 
-func (r *SmartContractRepository) GetValue() (*big.Int, error) {
+// GetValue retrieves the current value stored in the smart contract.
+// Returns:
+//   - A pointer to a big.Int containing the value.
+//   - An error if the call to the bound contract fails.
+func (r *SmartContractRepositoryBesu) GetValue() (*big.Int, error) {
 	caller := bind.CallOpts{
 		Pending: false,
 		Context: *r.ctx,
@@ -90,7 +89,14 @@ func (r *SmartContractRepository) GetValue() (*big.Int, error) {
 	return result, nil
 }
 
-func (r *SmartContractRepository) SetValue(value *big.Int, privateKey string) error {
+// SetValue sets a new value in the smart contract.
+// Parameters:
+//   - value: A pointer to a big.Int containing the value to set.
+//   - privateKey: A string representing the private key for transaction authorization.
+//
+// Returns:
+//   - An error if the chain ID retrieval, private key parsing, or transaction execution fails.
+func (r *SmartContractRepositoryBesu) SetValue(value *big.Int, privateKey string) error {
 	chainId, err := r.client.ChainID(*r.ctx)
 	if err != nil {
 		return domain.ErrInvalidChain
@@ -122,63 +128,20 @@ func (r *SmartContractRepository) SetValue(value *big.Int, privateKey string) er
 		return domain.ErrInvalidMined
 	}
 
-	// updatedAt will be updated by a trigger in the database using the sync method.
-	r.smartContract.Value = value.Uint64()
-
 	return nil
 }
 
-func (r *SmartContractRepository) CheckValue(value *big.Int) (bool, error) {
+// CheckValue verifies if the given value matches the value stored in the smart contract.
+// Parameters:
+//   - value: A pointer to a big.Int containing the value to check.
+//
+// Returns:
+//   - A boolean indicating if the values match.
+//   - An error if retrieving the current value from the smart contract fails.
+func (r *SmartContractRepositoryBesu) CheckValue(value *big.Int) (bool, error) {
 	correctValue, err := r.GetValue()
 	if err != nil {
 		return false, err
 	}
 	return correctValue.Cmp(value) == 0, nil
-}
-
-func (r *SmartContractRepository) SyncValue() error {
-	alreadyExists := true
-
-	getQuery := r.db.QueryBuilder.Select("smart_contract_id").From("smart_contracts").Where(sq.Eq{"address": r.smartContract.Address}).Limit(1)
-	sql, args, err := getQuery.ToSql()
-	if err != nil {
-		return domain.ErrInvalidSQL
-	}
-	err = r.db.QueryRow(*r.ctx, sql, args...).Scan(
-		&r.smartContract.SmartContractId,
-	)
-	if err == pgx.ErrNoRows {
-		alreadyExists = false
-	} else if err != nil {
-		return domain.ErrInternal
-	}
-
-	if alreadyExists {
-		query := r.db.QueryBuilder.Update("smart_contracts").Set("value", r.smartContract.Value).Where(sq.Eq{"smart_contract_id": r.smartContract.SmartContractId}).Suffix("RETURNING *")
-		sql, args, err = query.ToSql()
-		if err != nil {
-			return domain.ErrInvalidSQL
-		}
-	} else {
-		query := r.db.QueryBuilder.Insert("smart_contracts").Columns("address", "value").Values(r.smartContract.Address, r.smartContract.Value).Suffix("RETURNING *")
-		sql, args, err = query.ToSql()
-		if err != nil {
-			return domain.ErrInvalidSQL
-		}
-	}
-
-	err = r.db.QueryRow(*r.ctx, sql, args...).Scan(
-		&r.smartContract.SmartContractId,
-		&r.smartContract.Address,
-		&r.smartContract.Value,
-		&r.smartContract.CreatedAt,
-		&r.smartContract.UpdatedAt,
-	)
-	if err != nil {
-		if errCode := r.db.ErrorCode(err); errCode == "23505" {
-			return domain.ErrConflictingData
-		}
-		return domain.ErrInternal
-	}
-	return nil
 }
