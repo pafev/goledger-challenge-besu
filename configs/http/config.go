@@ -26,7 +26,7 @@ type HTTP struct {
 }
 
 func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfig.EthClient) error {
-	// (DI) Dependency Injection and Middlewares
+	// (DI) Dependency Injection
 	smartContractRepo, err := smartContractDomain.NewRepository(ctx, db, ethClient)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfi
 	smartContractService := smartContractApp.NewService(smartContractRepo)
 	smartContractHandler := smartContractApp.NewHandler(smartContractService)
 
-	// Routes
+	// Routes and Middlewares (for specifics groups or routes)
 	v1 := r.Group("/api/v1")
 	{
 		smartContract := v1.Group("/smart-contract")
@@ -68,6 +68,7 @@ func New() (*HTTP, error) {
 
 	// Global Middlewares
 	router.Use(sloggin.New(slog.Default()), gin.Recovery(), cors.New(ginConfig))
+	// ...it would be possible, for example, to add middleware to strip slashes
 
 	return &HTTP{
 		router,

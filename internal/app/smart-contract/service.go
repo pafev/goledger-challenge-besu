@@ -7,7 +7,7 @@ import (
 )
 
 type SmartContractService struct {
-	// aqui eh possivel consumir outros repositories ou executar funcoes de cache por cima
+	// here, its possible to consume other repositories or perform cache functions on top
 	repository *smartContractDomain.SmartContractRepository
 }
 
@@ -16,8 +16,8 @@ func NewService(repository *smartContractDomain.SmartContractRepository) *SmartC
 }
 
 func (r *SmartContractService) GetValue() (*big.Int, error) {
-	// para multiplas requisicoes, poderia ser implementado um sistema de cache
-	// ou um metodo de service que chamasse repository de mais de um tipo de contrato
+	// for multiple requests, a cache system or a service method could be implemented
+	// that calls a repository of more than one type of contract
 	value, err := r.repository.GetValue()
 	if err != nil {
 		return new(big.Int), err
@@ -25,12 +25,12 @@ func (r *SmartContractService) GetValue() (*big.Int, error) {
 	return value, nil
 }
 func (r *SmartContractService) SetValue(value *big.Int, privateKey string) error {
-	// seria possivel colocar validacoes sobre o valor, antes de passar ao repository
+	// here it would be possible to validate the value before passing it to the repository
 	err := r.repository.SetValue(value, privateKey)
 	return err
 }
 func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {
-	// para multiplas requisicoes, poderia ser implementado um sistema de cache
+	// For multiple requests, a cache system could be implemented
 	isEqual, err := r.repository.CheckValue(value)
 	if err != nil {
 		return false, nil

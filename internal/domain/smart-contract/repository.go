@@ -27,7 +27,7 @@ type SmartContractRepository struct {
 	boundContract *bind.BoundContract
 	address       common.Address
 	client        *besuConfig.EthClient
-	smartContract *SmartContractDB // instanciado aqui pois nesse escopo o contrato eh uma instancia fixa
+	smartContract *SmartContractDB // instantiated here because in this scope the contract is a fixed instance
 }
 
 func NewRepository(ctx *context.Context, db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepository, error) {
@@ -122,7 +122,7 @@ func (r *SmartContractRepository) SetValue(value *big.Int, privateKey string) er
 		return domain.ErrInvalidMined
 	}
 
-	// updatedAt sera atualizado mediante trigger no db com o metodo de sync
+	// updatedAt will be updated by a trigger in the database using the sync method.
 	r.smartContract.Value = value.Uint64()
 
 	return nil

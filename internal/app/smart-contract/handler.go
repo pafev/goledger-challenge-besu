@@ -9,7 +9,7 @@ import (
 )
 
 type SmartContractHandler struct {
-	// aqui sao feitos os tratamentos http por cima do service
+	// here, http treatments are performed on top of the services
 	service *SmartContractService
 }
 

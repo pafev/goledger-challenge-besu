@@ -22,7 +22,6 @@ done
 
 sed -i "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable|" "$CWD_PATH/.env"
 
-# Mostrar informações de conexão
 echo "URL = postgresql://user:pass@localhost:5432/goledger_challenge"
 echo ""
 echo "to interact to psql shell:"
