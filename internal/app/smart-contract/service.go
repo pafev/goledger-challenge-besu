@@ -38,5 +38,6 @@ func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {
 	return isEqual, nil
 }
 func (r *SmartContractService) SyncValue() error {
-	return nil
+	err := r.repository.SyncValue()
+	return err
 }

@@ -42,6 +42,7 @@ func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfi
 			smartContract.GET("", smartContractHandler.GetValue)
 			smartContract.GET("/check-value/:value", smartContractHandler.CheckValue)
 			smartContract.POST("/set-value", smartContractHandler.SetValue)
+			smartContract.POST("/sync", smartContractHandler.SyncValue)
 		}
 	}
 	return nil

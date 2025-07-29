@@ -22,7 +22,7 @@ func (r *SmartContractHandler) GetValue(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, value.String())
+	ctx.JSON(http.StatusOK, value)
 }
 
 type setValueRequest struct {
@@ -58,6 +58,11 @@ func (r *SmartContractHandler) CheckValue(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, isEqual)
 }
 
-func (r *SmartContractHandler) SyncValue() error {
-	return nil
+func (r *SmartContractHandler) SyncValue(ctx *gin.Context) {
+	err := r.service.SyncValue()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, "Sync Succesfully")
 }
