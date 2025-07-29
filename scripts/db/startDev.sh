@@ -1,29 +1,35 @@
-#! /bin/bash
-
-POSTGRES_USER="user"
-POSTGRES_PASSWORD="pass"
-POSTGRES_DB="database"
-
-docker rm -f postgres-db-goledger-challenge
-
-docker pull postgres
-docker run --name postgres-db-goledger-challenge \
-  -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-  -e POSTGRES_USER=$POSTGRES_USER \
-  -e POSTGRES_DB=$POSTGRES_DB \
-  -p 5432:5432 \
-  -v db_data:/var/lib/postgresql/data \
-  -d postgres
+#!/bin/bash
 
 if [ -f "../../.env" ]; then
-  ENV_PATH="../../.env"
+  CWD_PATH="../.."
 elif [ -f "../.env" ]; then
-  ENV_PATH="../.env"
+  CWD_PATH=".."
 elif [ -f "./.env" ]; then
-  ENV_PATH="./.env"
+  CWD_PATH="."
 else
   echo ".env file not found in expected locations."
   exit 1
 fi
 
-sed -i "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB?sslmode=disable|" $ENV_PATH
+docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down
+docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" down -v
+
+docker compose -f "$CWD_PATH/scripts/db/docker-compose.yml" up -d
+
+while ! docker exec goledger_challenge_db pg_isready -U postgres -d goledger_challenge >/dev/null 2>&1; do
+  sleep 2
+done
+
+sed -i "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable|" "$CWD_PATH/.env"
+
+# Mostrar informações de conexão
+echo "URL = postgresql://user:pass@localhost:5432/goledger_challenge"
+echo ""
+echo "to interact to psql shell:"
+echo "  docker exec -it goledger_challenge_db psql -U user -d goledger_challenge"
+echo ""
+echo "to view log:"
+echo "  docker compose logs -f postgres"
+echo ""
+echo "to stop:"
+echo "  docker compose down"

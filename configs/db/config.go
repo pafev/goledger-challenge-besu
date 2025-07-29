@@ -33,8 +33,7 @@ func (db *DB) Migrate() error {
 		return err
 	}
 
-	err = migrations.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err := migrations.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
 	}
 
