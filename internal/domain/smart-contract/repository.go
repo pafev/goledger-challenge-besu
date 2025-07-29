@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/jackc/pgx/v5"
 )
 
 type SmartContractRepository struct {
@@ -134,12 +135,21 @@ func (r *SmartContractRepository) CheckValue(value *big.Int) (bool, error) {
 	return correctValue.Cmp(value) == 0, nil
 }
 func (r *SmartContractRepository) SyncValue() error {
-	var (
-		sql  string
-		args []any
-		err  error
+	alreadyExists := true
+
+	getQuery := r.db.QueryBuilder.Select("smart_contract_id").From("smart_contracts").Where(sq.Eq{"address": r.smartContract.Address}).Limit(1)
+	sql, args, err := getQuery.ToSql()
+	if err != nil {
+		return domain.ErrInternal
+	}
+	err = r.db.QueryRow(*r.ctx, sql, args...).Scan(
+		&r.smartContract.SmartContractId,
 	)
-	alreadyExists := r.smartContract.SmartContractId != 0
+	if err == pgx.ErrNoRows {
+		alreadyExists = false
+	} else if err != nil {
+		return domain.ErrInternal
+	}
 
 	if alreadyExists {
 		query := r.db.QueryBuilder.Update("smart_contracts").Set("value", r.smartContract.Value).Where(sq.Eq{"smart_contract_id": r.smartContract.SmartContractId}).Suffix("RETURNING *")
