@@ -135,12 +135,12 @@ Na camada de domínio, foi implementado o padrão Repository para abstrair a ló
 Este padrão permite que a lógica de negócio seja independente dos detalhes de implementação dess sistemas externos, facilitando testes e manutenção do código.
 
 ```
-├── domain/
+├── internal/domain/
 │   └── smart_contract/
 │       ├── repository-besu.go # Interface do repository para o cliente Besu
 │       ├── repository-db.go   # Interface do repository para o cliente Postgres
 │       ├── model.go           # Entidades de domínio
-├── app/
+├── internal/app/
 │   └── smart_contract/
 │       ├── handler.go         # HTTP handlers
 │       └── service.go         # Coordenação de casos de uso
