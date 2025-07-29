@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"goledger-challenge-besu/configs/besu"
 	"goledger-challenge-besu/configs/db"
 	"goledger-challenge-besu/internal/domain"
 
@@ -20,7 +19,15 @@ type SmartContractRepositoryDB struct {
 	SmartContract *SmartContractDB // 'singleton' instantiated here because in this scope the contract is a fixed instance
 }
 
-func NewRepositoryDB(ctx *context.Context, db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepositoryDB, error) {
+// NewRepositoryDB initializes a new instance of SmartContractRepositoryDB.
+// Parameters:
+//   - ctx: The context for database operations.
+//   - db: The database configuration to use.
+//
+// Returns:
+//   - A pointer to SmartContractRepositoryDB if successful.
+//   - An error if the provided smart contract address is invalid.
+func NewRepositoryDB(ctx *context.Context, db *dbConfig.DB) (*SmartContractRepositoryDB, error) {
 	contractHexAddress := os.Getenv("SMART_CONTRACT_ADDR")
 	if !common.IsHexAddress(contractHexAddress) {
 		return nil, domain.ErrInvalidContractAddr
@@ -38,6 +45,11 @@ func NewRepositoryDB(ctx *context.Context, db *dbConfig.DB, client *besuConfig.E
 	}, nil
 }
 
+// SyncValue synchronizes the smart contract's data with the database.
+// It checks whether the smart contract's address already exists in the database.
+// If it does, the value is updated; otherwise, a new entry is created.
+// Returns:
+//   - An error if any database operation fails or if there is conflicting data.
 func (r *SmartContractRepositoryDB) SyncValue() error {
 	alreadyExists := true
 

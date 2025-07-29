@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"goledger-challenge-besu/configs/besu"
-	dbConfig "goledger-challenge-besu/configs/db"
 	"goledger-challenge-besu/internal/domain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -25,7 +24,15 @@ type SmartContractRepositoryBesu struct {
 	client        *besuConfig.EthClient
 }
 
-func NewRepositoryBesu(ctx *context.Context, db *dbConfig.DB, client *besuConfig.EthClient) (*SmartContractRepositoryBesu, error) {
+// NewRepositoryBesu initializes a new instance of SmartContractRepositoryBesu.
+// Parameters:
+//   - ctx: The context for contract operations.
+//   - client: The Ethereum client configuration.
+//
+// Returns:
+//   - A pointer to SmartContractRepositoryBesu if successful.
+//   - An error if there is an issue with the ABI or contract address.
+func NewRepositoryBesu(ctx *context.Context, client *besuConfig.EthClient) (*SmartContractRepositoryBesu, error) {
 	data, err := os.ReadFile(os.Getenv("SMART_CONTRACT_ABI_PATH"))
 	if err != nil {
 		return nil, domain.ErrAbiNotFound
@@ -64,6 +71,10 @@ func NewRepositoryBesu(ctx *context.Context, db *dbConfig.DB, client *besuConfig
 	}, nil
 }
 
+// GetValue retrieves the current value stored in the smart contract.
+// Returns:
+//   - A pointer to a big.Int containing the value.
+//   - An error if the call to the bound contract fails.
 func (r *SmartContractRepositoryBesu) GetValue() (*big.Int, error) {
 	caller := bind.CallOpts{
 		Pending: false,
@@ -78,6 +89,13 @@ func (r *SmartContractRepositoryBesu) GetValue() (*big.Int, error) {
 	return result, nil
 }
 
+// SetValue sets a new value in the smart contract.
+// Parameters:
+//   - value: A pointer to a big.Int containing the value to set.
+//   - privateKey: A string representing the private key for transaction authorization.
+//
+// Returns:
+//   - An error if the chain ID retrieval, private key parsing, or transaction execution fails.
 func (r *SmartContractRepositoryBesu) SetValue(value *big.Int, privateKey string) error {
 	chainId, err := r.client.ChainID(*r.ctx)
 	if err != nil {
@@ -113,6 +131,13 @@ func (r *SmartContractRepositoryBesu) SetValue(value *big.Int, privateKey string
 	return nil
 }
 
+// CheckValue verifies if the given value matches the value stored in the smart contract.
+// Parameters:
+//   - value: A pointer to a big.Int containing the value to check.
+//
+// Returns:
+//   - A boolean indicating if the values match.
+//   - An error if retrieving the current value from the smart contract fails.
 func (r *SmartContractRepositoryBesu) CheckValue(value *big.Int) (bool, error) {
 	correctValue, err := r.GetValue()
 	if err != nil {

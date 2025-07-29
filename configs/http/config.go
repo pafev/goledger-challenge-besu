@@ -30,11 +30,11 @@ type HTTP struct {
 
 func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfig.EthClient) error {
 	// (DI) Dependency Injection
-	smartContractRepoBesu, err := smartContractDomain.NewRepositoryBesu(ctx, db, ethClient)
+	smartContractRepoBesu, err := smartContractDomain.NewRepositoryBesu(ctx, ethClient)
 	if err != nil {
 		return err
 	}
-	smartContractRepoDB, err := smartContractDomain.NewRepositoryDB(ctx, db, ethClient)
+	smartContractRepoDB, err := smartContractDomain.NewRepositoryDB(ctx, db)
 	if err != nil {
 		return err
 	}
