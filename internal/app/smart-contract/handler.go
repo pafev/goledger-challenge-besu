@@ -1,6 +1,7 @@
 package smartContractApp
 
 import (
+	"goledger-challenge-besu/internal/domain"
 	"math/big"
 	"net/http"
 
@@ -38,7 +39,11 @@ func (r *SmartContractHandler) SetValue(ctx *gin.Context) {
 	}
 	err := r.service.SetValue(&req.Value, req.PrivateKey)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, err.Error())
+		if err == domain.ErrUnauthorized {
+			ctx.JSON(http.StatusUnauthorized, err.Error())
+		} else {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 	ctx.JSON(http.StatusOK, "New Value Defined Succesfully")
