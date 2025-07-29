@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"goledger-challenge-besu/configs/besu"
 	"goledger-challenge-besu/configs/db"
@@ -13,6 +15,7 @@ import (
 	"goledger-challenge-besu/internal/domain/smart-contract"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
 )
@@ -27,11 +30,15 @@ type HTTP struct {
 
 func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfig.EthClient) error {
 	// (DI) Dependency Injection
-	smartContractRepo, err := smartContractDomain.NewRepository(ctx, db, ethClient)
+	smartContractRepoBesu, err := smartContractDomain.NewRepositoryBesu(ctx, db, ethClient)
 	if err != nil {
 		return err
 	}
-	smartContractService := smartContractApp.NewService(smartContractRepo)
+	smartContractRepoDB, err := smartContractDomain.NewRepositoryDB(ctx, db, ethClient)
+	if err != nil {
+		return err
+	}
+	smartContractService := smartContractApp.NewService(smartContractRepoDB, smartContractRepoBesu)
 	smartContractHandler := smartContractApp.NewHandler(smartContractService)
 
 	// Routes and Middlewares (for specifics groups or routes)
@@ -68,6 +75,12 @@ func New() (*HTTP, error) {
 
 	// Global Middlewares
 	router.Use(sloggin.New(slog.Default()), gin.Recovery(), cors.New(ginConfig))
+	router.Use(timeout.New(
+		timeout.WithTimeout(10*time.Second),
+		timeout.WithResponse(func(c *gin.Context) {
+			c.JSON(http.StatusServiceUnavailable, "Request Timed Out")
+		}),
+	))
 	// ...it would be possible, for example, to add middleware to strip slashes
 
 	return &HTTP{
