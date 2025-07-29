@@ -90,18 +90,18 @@ func (r *SmartContractRepository) GetValue() (*big.Int, error) {
 	result := *abi.ConvertType(output[0], new(*big.Int)).(**big.Int)
 	return result, nil
 }
-func (r *SmartContractRepository) SetValue(value *big.Int) error {
+func (r *SmartContractRepository) SetValue(value *big.Int, privateKey string) error {
 	chainId, err := r.client.ChainID(*r.ctx)
 	if err != nil {
 		return domain.ErrInternal
 	}
 
-	priv, err := crypto.HexToECDSA("8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+	privateKeyECDSA, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
 		return domain.ErrInternal
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(priv, chainId)
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKeyECDSA, chainId)
 	if err != nil {
 		return domain.ErrInternal
 	}

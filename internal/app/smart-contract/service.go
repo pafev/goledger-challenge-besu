@@ -24,9 +24,9 @@ func (r *SmartContractService) GetValue() (*big.Int, error) {
 	}
 	return value, nil
 }
-func (r *SmartContractService) SetValue(value *big.Int) error {
+func (r *SmartContractService) SetValue(value *big.Int, privateKey string) error {
 	// seria possivel colocar validacoes sobre o valor, antes de passar ao repository
-	err := r.repository.SetValue(value)
+	err := r.repository.SetValue(value, privateKey)
 	return err
 }
 func (r *SmartContractService) CheckValue(value *big.Int) (bool, error) {

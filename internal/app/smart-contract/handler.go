@@ -26,7 +26,8 @@ func (r *SmartContractHandler) GetValue(ctx *gin.Context) {
 }
 
 type setValueRequest struct {
-	Value string `json:"value" binding:"required,omitempty" example:"0"`
+	Value      big.Int `json:"value" binding:"required,omitempty" example:"0"`
+	PrivateKey string  `json:"privateKey" binding:"required,omitempty" example:"ef321a27ac482e12c1d1"`
 }
 
 func (r *SmartContractHandler) SetValue(ctx *gin.Context) {
@@ -35,17 +36,14 @@ func (r *SmartContractHandler) SetValue(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	value, ok := new(big.Int).SetString(req.Value, 10)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, "Invalid value param")
-	}
-	err := r.service.SetValue(value)
+	err := r.service.SetValue(&req.Value, req.PrivateKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, value.String())
+	ctx.JSON(http.StatusOK, "New Value Defined Succesfully")
 }
+
 func (r *SmartContractHandler) CheckValue(ctx *gin.Context) {
 	valueStr := ctx.Param("value")
 	value, ok := new(big.Int).SetString(valueStr, 10)
@@ -59,6 +57,7 @@ func (r *SmartContractHandler) CheckValue(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, isEqual)
 }
+
 func (r *SmartContractHandler) SyncValue() error {
 	return nil
 }
