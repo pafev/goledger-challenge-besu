@@ -139,8 +139,7 @@ Este padrão permite que a lógica de negócio seja independente dos detalhes de
 │   └── smart_contract/
 │       ├── repository-besu.go # Interface do repository para o cliente Besu
 │       ├── repository-db.go   # Interface do repository para o cliente Postgres
-│       ├── entity.go          # Entidades de domínio
-│       └── service.go         # Lógica de negócio
+│       ├── model.go           # Entidades de domínio
 ├── app/
 │   └── smart_contract/
 │       ├── handler.go         # HTTP handlers
@@ -206,8 +205,8 @@ Antes de executar a aplicação, certifique-se de ter instalado:
 ```
 .
 ├── cmd/
-│   └── main.go                    # Ponto de entrada da aplicação
-├── configs/                       # Arquivos de setup e configuracao das dependencias do projeto
+│   └── main.go                       # Ponto de entrada da aplicação
+├── configs/                          # Arquivos de setup e configuracao das dependencias do projeto
 │   └── app/
 │       ├── config.go
 │   └── besu/
@@ -215,19 +214,18 @@ Antes de executar a aplicação, certifique-se de ter instalado:
 │   └── db/
 │       ├── config.go
 │   └── http/
-│       ├── config.go              # aqui há as rotas e área para Dependency Injection (DI) da api
-├── app/                           # Camada de aplicação
-│   └── smart_contract/
-│       ├── handler.go             # HTTP handlers
-│       ├── dto.go                 # Data Transfer Objects
-│       └── service.go             # Casos de uso
-├── domain/                        # Camada de domínio
-│   └── smart_contract/
-│       ├── repository-besu.go     # Interface do repository para o cliente Besu
-│       ├── repository-db.go       # Interface do repository para o cliente Postgres
-│       ├── entity.go              # Entidades
-│       └── service.go             # Lógica de negócio
-├── scripts/                       # Scripts de inicialização
+│       ├── config.go                 # aqui há as rotas e área para Dependency Injection (DI) da api
+├── internal/
+│   └── app/
+│       └── smart_contract/
+│           ├── handler.go            # HTTP handlers
+│           └── service.go            # Casos de uso
+│   └── domain/                       # Camada de domínio
+│       └── smart_contract/
+│           ├── repository-besu.go    # Interface do repository para o cliente Besu
+│           ├── repository-db.go      # Interface do repository para o cliente Postgres
+│           ├── model.go              # Entidades
+├── scripts/                          # Scripts de inicialização
 │   ├── besu/
 │   └── db/
 ├── .env.example
