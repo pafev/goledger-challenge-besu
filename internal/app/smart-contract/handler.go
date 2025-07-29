@@ -24,8 +24,27 @@ func (r *SmartContractHandler) GetValue(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, value.String())
 }
-func (r *SmartContractHandler) SetValue() error {
-	return nil
+
+type setValueRequest struct {
+	Value string `json:"value" binding:"required,omitempty" example:"0"`
+}
+
+func (r *SmartContractHandler) SetValue(ctx *gin.Context) {
+	var req setValueRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	value, ok := new(big.Int).SetString(req.Value, 10)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, "Invalid value param")
+	}
+	err := r.service.SetValue(value)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, value.String())
 }
 func (r *SmartContractHandler) CheckValue(ctx *gin.Context) {
 	valueStr := ctx.Param("value")
@@ -36,6 +55,7 @@ func (r *SmartContractHandler) CheckValue(ctx *gin.Context) {
 	isEqual, err := r.service.CheckValue(value)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, err.Error())
+		return
 	}
 	ctx.JSON(http.StatusOK, isEqual)
 }
