@@ -1,248 +1,318 @@
-# GoLedger Challenge - Besu Edition
+# GoLedger Besu Challenge
 
-On this challenge, you will interact with a Besu node. The goal is to create a simple application that will interact with a Besu node to transact in a smart contract, check the value of a smart contract variable and sync that value to an external database.
+## Descrição do Projeto
 
-To accomplish that, we recommend you use a UNIX-like machine (Linux/macOS). Besides that, we will need to install NPM/NPX, Hardhat and Docker.
+Implementação pessoal (Paulo Fernando Vilarim) para o desafio técnico da GoLedger, que consiste em criar uma aplicação Go que interage com uma rede blockchain Hyperledger Besu QBFT. A aplicação deve ser capaz de interagir com smart contracts deployados na rede Besu, gerenciar valores de variáveis do smart contract, sincronizar dados entre blockchain e banco de dados SQL (Postgres na atual implementação), e expor funcionalidades através de uma API REST.
 
-## Install the prerequisites
+## Sobre as Tecnologias
 
-- Install NPM and NPX (https://www.npmjs.com/get-npm)
-- Install Hardhat (https://hardhat.org/getting-started/)
-- Install Docker and Docker Compose (https://www.docker.com/)
-- Install Besu (https://besu.hyperledger.org/private-networks/get-started/install/binary-distribution)
-- Install Go (https://golang.org/dl/)
-- Fork the repository https://github.com/goledgerdev/goledger-challenge-besu 
-    - Fork it, do **NOT** clone it, since you will need to send us your forked repository
-	- If you cannot fork it, create a private repository and give access to `samuelvenzi`
+### Hyperledger Besu
 
-### Hardhat installation details
+Hyperledger Besu é um cliente Ethereum de código aberto desenvolvido pela ConsenSys e posteriormente para a Hyperledger Foundation. Besu implementa a Ethereum Virtual Machine (EVM) e suporta os principais algoritmos de consenso do Ethereum, incluindo Proof of Work (PoW) e Proof of Stake (PoS).
 
-Hardhat is a development environment to compile, deploy, test, and debug your Ethereum software. It helps developers manage and automate the recurring tasks that are inherent to the process of building smart contracts and dApps.
+As principais características do Besu incluem:
+- Compatibilidade total com a Ethereum MainNet
+- Suporte para redes privadas e de consórcio
+- Implementação completa da EVM
+- APIs JSON-RPC compatíveis com Ethereum
+- Suporte para diferentes algoritmos de consenso (IBFT, QBFT, Clique)
 
-To install Hardhat, you need to have Node.js installed. If you don't have it, you can download it [here](https://nodejs.org/).
+### Ethereum e Smart Contracts
 
-After installing Node.js, you can install Hardhat by running the following command:
+Ethereum é uma plataforma blockchain descentralizada que permite a execução de contratos inteligentes, que são programas autoexecutáveis com os termos do acordo diretamente escritos em código, de modo a proporcionar segurança e autoridade sem possibilidade de censura, fraude ou interferência de terceiros.
 
-```bash
-npm install --save-dev hardhat
+### Besu como Cliente Ethereum
+
+Como cliente Ethereum, o Besu oferece:
+- Sincronização com a rede Ethereum
+- Validação de transações e blocos
+- Execução de smart contracts
+- Capacidade de mineração/validação de blocos
+
+Para ambientes de desenvolvimento e testes, o Besu pode ser configurado para executar redes privadas locais, permitindo desenvolvimento e teste de aplicações sem custos de gas da rede principal.
+
+## Arquitetura da Aplicação
+
+A aplicação foi desenvolvida de maneira a se basear nos princípios da Clean Architecture, porém evitando uma carga de over-engineering dado o escopo reduzido do projeto, ao mesmo tempo que abre portas para escalabilidade e fácil manutenção, devido a modularização, padrões de projeto aplicados e tratamento de erros adequado. O projeto possui uma divisão clara entre as camadas de aplicação e domínio. A estrutura organizacional segue o padrão de separação por funcionalidades dentro de cada camada.
+
+### Camadas da Aplicação
+
+**Camada de Domínio (`domain/`)**
+- Contém as regras de negócio e entidades centrais da aplicação
+- Implementa o padrão Repository para desacoplar a lógica de negócio dos detalhes de implementação dos clientes da aplicação (SGBD Postgresql e cliente Ethereum Besu)
+- Organizada por funcionalidades (ex: `smart_contract/`)
+
+**Camada de Aplicação (`app/`)**
+- Responsável pela coordenação entre a camada de domínio e interfaces externas (requisições http)
+- Contém os casos de uso e serviços da aplicação
+- Organizada por funcionalidades seguindo a mesma estrutura de pastas da camada de domínio
+
+### Padrão Repository
+
+Na camada de domínio, foi implementado o padrão Repository para abstrair a lógica de interação com os clientes externos:
+- **PostgreSQL**: Para persistência de dados
+- **Besu (Ethereum Client)**: Para interação com a blockchain
+
+Este padrão permite que a lógica de negócio seja independente dos detalhes de implementação dess sistemas externos, facilitando testes e manutenção do código.
+
+```
+├── domain/
+│   └── smart_contract/
+│       ├── repository-besu.go # Interface do repository para o cliente Besu
+│       ├── repository-db.go   # Interface do repository para o cliente Postgres
+│       ├── entity.go          # Entidades de domínio
+│       └── service.go         # Lógica de negócio
+├── app/
+│   └── smart_contract/
+│       ├── handler.go         # HTTP handlers
+│       └── service.go         # Coordenação de casos de uso
+└── scripts/                   # semelhante a uma seção de "infrastructure"
+    ├── db/                    # Implementação PostgreSQL
+    └── besu/                  # Implementação Besu client
 ```
 
-Note: Your system might require a slightly different command to install Hardhat. Check the [Hardhat installation guide](https://hardhat.org/getting-started/) for more information.
+## Funcionalidades e Endpoints
 
-## Set up the environment
+A aplicação expõe quatro endpoints REST com tratamento personalizado de erros:
 
-To set up the environment, you need to fork this repository. Make sure you have installed the requirements. To set up the environment, you need to run the following commands:
+### GET /api/v1/smart-contracts/
+**Função**: Recupera o valor atual armazenado no smart contract
+**Ação**: Realiza uma chamada de leitura diretamente na blockchain
+**Retorno**: JSON com o valor atual do contrato
+
+### GET /api/v1/smart-contracts/check-value/:value
+**Função**: Compara o valor do smart contract com o valor fornecido na rota
+**Parâmetros**: `value` - valor a ser comparado via URL parameter
+**Retorno**: JSON indicando se os valores são iguais (`true`/`false`)
+
+### POST /api/v1/smart-contracts/set-value
+**Função**: Define um novo valor no smart contract
+**Body**: JSON contendo:
+```json
+{
+  "value": 42,
+  "privateKey": "..."
+}
+```
+**Ação**: Envia uma transação para a blockchain atualizando o valor
+**Retorno**: JSON confirmando a transação
+
+### POST /api/v1/smart-contracts/sync
+**Função**: Sincroniza o valor do smart contract com o banco de dados PostgreSQL
+**Ação**: Lê o valor atual da blockchain e armazena/atualiza no banco de dados
+**Retorno**: JSON confirmando a sincronização
+
+## Tecnologias Utilizadas
+
+- **Linguagem**: Go
+- **Blockchain**: Hyperledger Besu
+- **Cliente Ethereum Lib**: go-ethereum
+- **Banco de Dados**: PostgreSQL
+- **API**: REST
+- **Containerização**: Docker & Docker Compose
+- **Smart Contract**: SimpleStorage
+
+## Pré-requisitos
+
+Antes de executar a aplicação, certifique-se de ter instalado:
+
+- Go (versão 1.24)
+- Node.js e NPM (recomendo via NVM)
+- Docker e Docker Compose (verificar se Docker Compose está atualizado)
+- Hardhat
+- Hyperledger Besu
+
+## Como Executar
+
+### 1. Configuração do Ambiente
+
+Gere o arquivo de variáveis de ambiente a partir do template:
 
 ```bash
-cd besu
+cp .env.example .env
+```
+
+### 2. Inicialização do Cliente Besu
+
+Execute os seguintes comandos para inicializar a rede Besu local:
+
+```bash
+cd scripts/besu
+chmod +x ./startDev.sh
 ./startDev.sh
+cd ../..
 ```
 
-This will bring up a local Besu netwwork with 4 nodes. You can check the logs of each node by running the following command:
+Este comando irá:
+- Inicializar uma rede Besu local com 4 nós
+- Deployar o smart contract SimpleStorage
+- Exibir o endereço do contrato (anote este endereço para configurar no .env)
+
+### 3. Inicialização do Banco de Dados
+
+Execute o script para inicializar o PostgreSQL:
 
 ```bash
-docker logs -f besu_node-0
+chmod +x ./scripts/db/startDev.sh
+./scripts/db/startDev.sh
 ```
 
-This will also deploy a smart contract to the network. The contract is a simple storage contract that has a variable that can be set and get. Note that it will log the contracts address, which will be important later. If you want to check the contract's source code, you can find it in the `contracts` folder. The contract's ABI can be found in the `/besu/artifacts/contracts/SimpleStorage.sol/SimpleStorage.json` file.
+Este comando irá:
+- Inicializar uma container com um banco de dados Postgres 1.17 operando
+- Exibir a URL do banco de dados (automatizei a passagem da URL para o .env, mas anote esta URL para confirmar no .env)
+Obs.: se optar por rodar o banco de dados locamente, deve haver no .env a query param `?sslmode=disable` adicionada à URL do banco de dados. Verifique
 
-# The challenge
+### 4. Configuração das Variáveis de Ambiente
 
-Your task is to create a simple application that interacts with a Besu blockchain network and an SQL database. The application should be implemented in Go and expose its functionality as either a REST API or a gRPC service.
+Complete o arquivo `.env` com as informações obtidas nos passos anteriores. Dele deve ficar mais ou menos assim:
 
-## Requirements
+```env
+# Informações da aplicação
+APP_NAME=goledger-challenge-besu
+APP_DOMAIN="localhost" # localhost for development env
+APP_ENV="development"  # development or stage or production
+APP_PORT=5000
 
-1. **Programming Language:**
-   - The application must be written in Go.
+# Configuração do Banco de Dados
+DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable
 
-2. **API Type:**
-   - Choose either REST or gRPC for the service interface.
-   - If implementing gRPC, enable reflection so we can test it using tools like Postman.
-
-3. **Database Integration:**
-   - Use an SQL database (e.g., PostgreSQL or MySQL).
-   - Store the value of the smart contract variable in the database.
-
-4. **Endpoints:**
-   - The application should provide the following functionality via appropriately named endpoints or methods:
-
-     1. **SET:**
-        - Set a new value for the smart contract variable.
-        - The application should send this value to the deployed smart contract on the Besu network.
-
-     2. **GET:**
-        - Retrieve the current value of the smart contract variable from the blockchain.
-
-     3. **SYNC:**
-        - Synchronize the value of the smart contract variable from the blockchain to the SQL database.
-
-     4. **CHECK:**
-        - Compare the value stored in the database with the current value of the smart contract variable.
-        - Return `true` if they are the same, otherwise return `false`.
-
-   - **Endpoint Naming:**
-     - You may name the endpoints/methods as you see fit, provided their functionality meets the requirements outlined above.
-
-   - **General Notes:**
-     - The Besu network will have a smart contract deployed that includes a single variable to store a value (similar to a SimpleStorage contract).
-     - Ensure the application handles blockchain interactions (reads/writes) correctly.
-     - Add appropriate error handling for all interactions (blockchain, database, and API).
-
-## Deliverables
-
-1. **Source Code:**
-   - The source code of the application should be hosted on a public GitHub repository forked from this one.
-   - Include a README file with instructions on how to run the application.
-2. **Documentation:**
-   - Provide a brief explanation of the application's architecture and how it interacts with the Besu network and the SQL database.
-   - Include any additional information you think is relevant.
-   - This can be done in the README file or as a separate Markdown file.
-
-Remember to commit your changes to your forked repository. Commits will be used during the evaluation process.
-
-## Interaction with the Besu network
-
-To interact with the Besu network, you can use the Go Ethereum client. Below we provide two functions that interact with the Besu network, one for writing data (`ExecContract`) and one for reading data (`CallContract`). Feel free to include and change this function in your application.
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"log/slog"
-	"strings"
-	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
-)
-
-func ExecContract() {
-	abi, err := abi.JSON(strings.NewReader("REPLACE: abi JSON as string goes here")) // found under besu/artifacts/contracts/SimpleStorage.sol/SimpleStorage.json
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := ethclient.DialContext(ctx, "REPLACE: network URL") // e.g., http://localhost:8545
-	if err != nil {
-		log.Fatalf("error dialing node: %v", err)
-	}
-
-	slog.Info("querying chain id")
-
-	chainId, err := client.ChainID(ctx)
-	if err != nil {
-		log.Fatalf("error querying chain id: %v", err)
-	}
-	defer client.Close()
-
-	contractAddress := common.HexToAddress("REPLACE: contract address") // will be returned during startDev.sh execution
-
-	boundContract := bind.NewBoundContract(
-		contractAddress,
-		abi,
-		client,
-		client,
-		client,
-	)
-
-	priv, err := crypto.HexToECDSA("REPLACE: private key") // this can be found in the genesis.json file
-	if err != nil {
-		log.Fatalf("error loading private key: %v", err)
-	}
-
-	auth, err := bind.NewKeyedTransactorWithChainID(priv, chainId)
-	if err != nil {
-		log.Fatalf("error creating transactor: %v", err)
-	}
-
-	tx, err := boundContract.Transact(auth, "REPLACE: method name")
-	if err != nil {
-		log.Fatalf("error transacting: %v", err)
-	}
-
-	fmt.Println("waiting until transaction is mined",
-		"tx", tx.Hash().Hex(),
-	)
-
-	receipt, err := bind.WaitMined(
-		context.Background(),
-		client,
-		tx,
-	)
-	if err != nil {
-		log.Fatalf("error waiting for transaction to be mined: %v", err)
-	}
-
-	fmt.Printf("transaction mined: %v\n", receipt)
-}
+# Configurações da rede Besu
+BESU_URL=http://localhost:8545 # http://localhost:8545 for development env
+SMART_CONTRACT_ADDR="<endereco_do_contrato_deployado>"
+SMART_CONTRACT_ABI_PATH="scripts/besu/artifacts/contracts/SimpleStorage.sol/SimpleStorage.json"
 ```
 
-You can also use the following code to call `view` functions on the contract.
+### 5. Instalação de Dependências
 
-```go
-package main
+Baixe as dependências do Go:
 
-import (
-	"context"
-	"fmt"
-	"strings"
-	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-)
-
-func CallContract()  {
-	var result interface{}
-
-	abi, err := abi.JSON(strings.NewReader("REPLACE: abi JSON as string goes here")) // found under besu/artifacts/contracts/SimpleStorage.sol/SimpleStorage.json
-	if err != nil {
-		log.Fatalf("error parsing abi: %v", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := ethclient.DialContext(ctx, "REPLACE: network URL") // e.g., http://localhost:8545
-	if err != nil {
-		log.Fatalf("error connecting to eth client: %v", err)
-	}
-	defer client.Close()
-
-	contractAddress := common.HexToAddress("REPLACE: contract address") // will be returned during startDev.sh execution
-	caller := bind.CallOpts{
-		Pending: false,
-		Context: ctx,
-	}
-
-	boundContract := bind.NewBoundContract(
-		contractAddress,
-		abi,
-		client,
-		client,
-		client,
-	)
-
-	var output []interface{}
-	err = boundContract.Call(&caller, &output, "REPLACE: method name")
-	if err != nil {
-		log.Fatalf("error calling contract: %v", err)
-	}
-	result = output
-
-	fmt.Println("Successfully called contract!", result)
-}
+```bash
+go mod download
+go mod tidy
 ```
 
-To complete the challenge, you must send us the link to your repository with the alterations you made.
+### 6. Execução da Aplicação
+
+Execute a aplicação:
+
+```bash
+go run cmd/main.go
+```
+
+A aplicação estará disponível em `http://localhost:8080`.
+
+## Estrutura do Projeto
+
+```
+.
+├── cmd/
+│   └── main.go                    # Ponto de entrada da aplicação
+├── configs/                       # Arquivos de setup e configuracao das dependencias do projeto
+│   └── app/
+│       ├── config.go
+│   └── besu/
+│       ├── config.go
+│   └── db/
+│       ├── config.go
+│   └── http/
+│       ├── config.go              # aqui há as rotas e área para Dependency Injection (DI) da api
+├── app/                           # Camada de aplicação
+│   └── smart_contract/
+│       ├── handler.go             # HTTP handlers
+│       ├── dto.go                 # Data Transfer Objects
+│       └── service.go             # Casos de uso
+├── domain/                        # Camada de domínio
+│   └── smart_contract/
+│       ├── repository-besu.go     # Interface do repository para o cliente Besu
+│       ├── repository-db.go       # Interface do repository para o cliente Postgres
+│       ├── entity.go              # Entidades
+│       └── service.go             # Lógica de negócio
+├── scripts/                       # Scripts de inicialização
+│   ├── besu/
+│   └── db/
+├── .env.example
+├── go.mod
+├── go.sum
+└── README.md
+```
+
+## Exemplos de Uso
+
+### Recuperar valor do contrato
+
+```bash
+curl -X GET http://localhost:8080/api/v1/smart-contracts/
+```
+
+### Definir novo valor
+
+```bash
+curl -X POST http://localhost:8080/api/v1/smart-contracts/set-value \
+  -H "Content-Type: application/json" \
+  -d '{
+    "value": 123,
+    "privateKey": "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63"
+  }'
+```
+
+### Verificar valor
+
+```bash
+curl -X GET http://localhost:8080/api/v1/smart-contracts/check-value/123
+```
+
+### Sincronizar com banco de dados
+
+```bash
+curl -X POST http://localhost:8080/api/v1/smart-contracts/sync
+```
+
+## Tratamento de Erros
+
+A aplicação implementa tratamento de erros abrangente para:
+
+- Falhas de conexão com a rede Besu
+- Erros de transação blockchain
+- Problemas de conectividade com banco de dados
+- Validação de dados de entrada
+- Timeouts em operações de rede
+- Parsing de parâmetros de rota
+- Autenticação de chaves privadas
+
+Todos os erros retornam respostas HTTP apropriadas com mensagens descritivas ou log de erro
+
+## Notas Técnicas
+
+### Interação com Smart Contract
+
+A aplicação utiliza a biblioteca go-ethereum para interagir com a rede Besu:
+
+- **Transações de Escrita**: Utilizam `bind.NewKeyedTransactorWithChainID` para assinar transações
+- **Chamadas de Leitura**: Utilizam `bind.CallOpts` para chamadas que não modificam estado
+- **ABI**: Carregado automaticamente dos artifacts gerados pelo Hardhat
+
+### Segurança
+
+- Chaves privadas são fornecidas via requisição (não armazenadas)
+- Validação de entrada em todos os endpoints
+- Timeouts configurados para operações blockchain
+- Tratamento de conexões com banco de dados
+
+### Performance
+
+- Pool de conexões com banco de dados
+- Reutilização de clientes Ethereum
+- Timeouts apropriados para evitar travamentos
+- Estruturas de dados otimizadas
+
+## Desenvolvimento
+
+### Logs
+
+A aplicação utiliza logging estruturado para facilitar debugging e monitoramento em produção.
+
+## Contribuição
+
+Este projeto faz parte de um desafio técnico da GoLedger, desevolvido por mim, Paulo Fernando Vilarim (pafev).
+
+**Desenvolvido para o GoLedger Challenge**
