@@ -83,7 +83,7 @@ Execute a aplicação:
 go run cmd/main.go
 ```
 
-A aplicação estará disponível em `http://localhost:8080`.
+A aplicação estará disponível em `http://localhost:5000`.
 
 ## Sobre as Tecnologias
 
