@@ -1,8 +1,9 @@
 package appConfig
 
 import (
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type App struct {
