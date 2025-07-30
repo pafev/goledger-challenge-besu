@@ -78,7 +78,7 @@ func New() (*HTTP, error) {
 	// Global Middlewares
 	router.Use(sloggin.New(slog.Default()), gin.Recovery(), cors.New(ginConfig))
 	router.Use(timeout.New(
-		timeout.WithTimeout(10*time.Second),
+		timeout.WithTimeout(12*time.Second),
 		timeout.WithResponse(func(c *gin.Context) {
 			c.JSON(http.StatusServiceUnavailable, "Request Timed Out")
 		}),
