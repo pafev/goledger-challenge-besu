@@ -2,6 +2,8 @@ package smartContractDomain
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"os"
 	"time"
 
@@ -30,7 +32,8 @@ type SmartContractRepositoryDB struct {
 func NewRepositoryDB(ctx *context.Context, db *dbConfig.DB) (*SmartContractRepositoryDB, error) {
 	contractHexAddress := os.Getenv("SMART_CONTRACT_ADDR")
 	if !common.IsHexAddress(contractHexAddress) {
-		return nil, domain.ErrInvalidContractAddr
+		slog.Error("Error reading contract addres", "error", "Contract address in invalid format")
+		return nil, errors.New("Invalid contract address")
 	}
 
 	return &SmartContractRepositoryDB{
@@ -56,6 +59,7 @@ func (r *SmartContractRepositoryDB) SyncValue() error {
 	getQuery := r.db.QueryBuilder.Select("smart_contract_id").From("smart_contracts").Where(sq.Eq{"address": r.SmartContract.Address}).Limit(1)
 	sql, args, err := getQuery.ToSql()
 	if err != nil {
+		slog.Error("Error generating query sql to get smart contract from db", "error", err.Error())
 		return domain.ErrInvalidSQL
 	}
 	err = r.db.QueryRow(*r.ctx, sql, args...).Scan(
@@ -64,6 +68,7 @@ func (r *SmartContractRepositoryDB) SyncValue() error {
 	if err == pgx.ErrNoRows {
 		alreadyExists = false
 	} else if err != nil {
+		slog.Error("Error getting smart contract from db", "sql", sql, "error", err.Error())
 		return domain.ErrInternal
 	}
 
@@ -71,12 +76,14 @@ func (r *SmartContractRepositoryDB) SyncValue() error {
 		query := r.db.QueryBuilder.Update("smart_contracts").Set("value", r.SmartContract.Value).Where(sq.Eq{"smart_contract_id": r.SmartContract.SmartContractId}).Suffix("RETURNING *")
 		sql, args, err = query.ToSql()
 		if err != nil {
+			slog.Error("Error generating query sql to update smart contract in db", "error", err.Error())
 			return domain.ErrInvalidSQL
 		}
 	} else {
 		query := r.db.QueryBuilder.Insert("smart_contracts").Columns("address", "value").Values(r.SmartContract.Address, r.SmartContract.Value).Suffix("RETURNING *")
 		sql, args, err = query.ToSql()
 		if err != nil {
+			slog.Error("Error generating query sql to insert smart contract on db", "error", err.Error())
 			return domain.ErrInvalidSQL
 		}
 	}
@@ -90,8 +97,10 @@ func (r *SmartContractRepositoryDB) SyncValue() error {
 	)
 	if err != nil {
 		if errCode := r.db.ErrorCode(err); errCode == "23505" {
+			slog.Error("Error creating or updating smart contract on db. Conflicts with columns requirements", "sql", sql, "error", err.Error())
 			return domain.ErrConflictingData
 		}
+		slog.Error("Error creating or updating smart contract on db", "sql", sql, "error", err.Error())
 		return domain.ErrInternal
 	}
 	return nil

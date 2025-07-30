@@ -3,6 +3,8 @@ package smartContractDomain
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"math/big"
 	"os"
 	"strings"
@@ -33,24 +35,31 @@ type SmartContractRepositoryBesu struct {
 //   - A pointer to SmartContractRepositoryBesu if successful.
 //   - An error if there is an issue with the ABI or contract address.
 func NewRepositoryBesu(ctx *context.Context, client *besuConfig.EthClient) (*SmartContractRepositoryBesu, error) {
-	data, err := os.ReadFile(os.Getenv("SMART_CONTRACT_ABI_PATH"))
+	abiPath := os.Getenv("SMART_CONTRACT_ABI_PATH")
+	data, err := os.ReadFile(abiPath)
 	if err != nil {
-		return nil, domain.ErrAbiNotFound
+		slog.Error("Error reading contract abi file", "path", abiPath, "error", err.Error())
+		return nil, err
 	}
-	var contractDefinition map[string]any
+	var contractDefinition struct {
+		Abi any `json:"abi"`
+	}
 	json.Unmarshal(data, &contractDefinition)
-	data, err = json.Marshal(contractDefinition["abi"])
+	data, err = json.Marshal(contractDefinition.Abi)
 	if err != nil {
-		return nil, domain.ErrInvalidAbi
+		slog.Error("Error getting contract abi structure from abi file", "error", err.Error())
+		return nil, err
 	}
 	abi, err := abi.JSON(strings.NewReader(string(data)))
 	if err != nil {
-		return nil, domain.ErrInvalidAbi
+		slog.Error("Error converting contract abi json to string", "error", err.Error())
+		return nil, err
 	}
 
 	contractHexAddress := os.Getenv("SMART_CONTRACT_ADDR")
 	if !common.IsHexAddress(contractHexAddress) {
-		return nil, domain.ErrInvalidContractAddr
+		slog.Error("Error reading contract addres", "error", "Contract address in invalid format")
+		return nil, errors.New("Invalid contract address")
 	}
 	var contractAddress = common.HexToAddress(contractHexAddress)
 
@@ -83,6 +92,7 @@ func (r *SmartContractRepositoryBesu) GetValue() (*big.Int, error) {
 	var output []any
 	err := r.boundContract.Call(&caller, &output, "get")
 	if err != nil {
+		slog.Error("Error calling contract (bound contract)", "options", caller, "error", err.Error())
 		return new(big.Int), domain.ErrBoundContractCall
 	}
 	result := *abi.ConvertType(output[0], new(*big.Int)).(**big.Int)
@@ -99,33 +109,33 @@ func (r *SmartContractRepositoryBesu) GetValue() (*big.Int, error) {
 func (r *SmartContractRepositoryBesu) SetValue(value *big.Int, privateKey string) error {
 	chainId, err := r.client.ChainID(*r.ctx)
 	if err != nil {
+		slog.Error("Error getting chain from eth client", "error", err.Error())
 		return domain.ErrInvalidChain
 	}
 
 	privateKeyECDSA, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
+		slog.Error("Error converting private key hex format to ECDSA format", "error", err.Error())
 		return domain.ErrUnauthorized
 	}
 
 	auth, err := bind.NewKeyedTransactorWithChainID(privateKeyECDSA, chainId)
 	if err != nil {
+		slog.Error("Error getting auth opts to transact bound contract", "error", err.Error())
 		return domain.ErrUnauthorized
 	}
 
 	tx, err := r.boundContract.Transact(auth, "set", value)
 	if err != nil {
+		slog.Error("Error executing transaction in contract (bound contract)", "options", auth, "error", err.Error())
 		return domain.ErrBoundContractTransact
 	}
 
 	tx.Hash().Hex()
 
-	_, err = bind.WaitMined(
-		context.Background(),
-		r.client,
-		tx,
-	)
-	if err != nil {
-		return domain.ErrInvalidMined
+	if _, err = bind.WaitMined(*r.ctx, r.client, tx); err != nil {
+		slog.Error("Error waiting to be mined", "error", err.Error())
+		return domain.ErrBoundContractTransact
 	}
 
 	return nil
@@ -141,6 +151,7 @@ func (r *SmartContractRepositoryBesu) SetValue(value *big.Int, privateKey string
 func (r *SmartContractRepositoryBesu) CheckValue(value *big.Int) (bool, error) {
 	correctValue, err := r.GetValue()
 	if err != nil {
+		slog.Error("Error contract value in SmartContractRepositoryBesu.CheckValue", "error", err.Error())
 		return false, err
 	}
 	return correctValue.Cmp(value) == 0, nil
