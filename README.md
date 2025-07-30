@@ -1,5 +1,26 @@
 # GoLedger Besu Challenge
 
+## About the Technologies
+
+### Hyperledger Besu
+
+Hyperledger Besu is an open-source Ethereum client developed by ConsenSys and later donated to the Hyperledger Foundation. Besu implements the Ethereum Virtual Machine (EVM) and supports major Ethereum consensus algorithms, including Proof of Work (PoW) and Proof of Stake (PoS).
+
+### Ethereum and Smart Contracts
+
+Ethereum is a decentralized blockchain platform that enables the execution of smart contracts—self-executing programs with the terms of the agreement directly written in code, offering security and trust without the need for censorship, fraud, or third-party interference.
+
+### Besu as an Ethereum Client
+
+As an Ethereum client, Besu provides:
+
+* Synchronization with the Ethereum network
+* Transaction and block validation
+* Smart contract execution
+* Block mining/validation capabilities
+
+For development and testing environments, Besu can be configured to run local private networks, allowing application development and testing without mainnet gas costs.
+
 ## Project Description
 
 Personal implementation (Paulo Fernando Vilarim) for the GoLedger technical challenge, which consists of creating a Go application that interacts with a Hyperledger Besu QBFT blockchain network. The application must be able to interact with smart contracts deployed on the Besu network, manage smart contract variable values, synchronize data between the blockchain and an SQL database (Postgres in the current implementation), and expose functionalities through a REST API.
@@ -125,27 +146,6 @@ The application will be available at `http://localhost:5000`.
 
 * Synchronizes the smart contract value with the PostgreSQL database
 * Returns JSON confirming synchronization
-
-## About the Technologies
-
-### Hyperledger Besu
-
-Hyperledger Besu is an open-source Ethereum client developed by ConsenSys and later donated to the Hyperledger Foundation. Besu implements the Ethereum Virtual Machine (EVM) and supports major Ethereum consensus algorithms, including Proof of Work (PoW) and Proof of Stake (PoS).
-
-### Ethereum and Smart Contracts
-
-Ethereum is a decentralized blockchain platform that enables the execution of smart contracts—self-executing programs with the terms of the agreement directly written in code, offering security and trust without the need for censorship, fraud, or third-party interference.
-
-### Besu as an Ethereum Client
-
-As an Ethereum client, Besu provides:
-
-* Synchronization with the Ethereum network
-* Transaction and block validation
-* Smart contract execution
-* Block mining/validation capabilities
-
-For development and testing environments, Besu can be configured to run local private networks, allowing application development and testing without mainnet gas costs.
 
 ## Application Architecture
 
