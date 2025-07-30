@@ -32,10 +32,12 @@ func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfi
 	// (DI) Dependency Injection
 	smartContractRepoBesu, err := smartContractDomain.NewRepositoryBesu(ctx, ethClient)
 	if err != nil {
+		slog.Error("Error building SmartContractRepositoryBesu", "error", err)
 		return err
 	}
 	smartContractRepoDB, err := smartContractDomain.NewRepositoryDB(ctx, db)
 	if err != nil {
+		slog.Error("Error building SmartContractRepositoryDB", "error", err)
 		return err
 	}
 	smartContractService := smartContractApp.NewService(smartContractRepoDB, smartContractRepoBesu)
@@ -76,7 +78,7 @@ func New() (*HTTP, error) {
 	// Global Middlewares
 	router.Use(sloggin.New(slog.Default()), gin.Recovery(), cors.New(ginConfig))
 	router.Use(timeout.New(
-		timeout.WithTimeout(10*time.Second),
+		timeout.WithTimeout(12*time.Second),
 		timeout.WithResponse(func(c *gin.Context) {
 			c.JSON(http.StatusServiceUnavailable, "Request Timed Out")
 		}),
