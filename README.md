@@ -26,6 +26,7 @@ cd ../..
 ```
 
 Este comando irá:
+
 - Inicializar uma rede Besu local com 4 nós
 - Deployar o smart contract SimpleStorage
 - Exibir o endereço do contrato (anote este endereço para configurar no .env)
@@ -40,9 +41,10 @@ chmod +x ./scripts/db/startDev.sh
 ```
 
 Este comando irá:
+
 - Inicializar uma container com um banco de dados Postgres 1.17 operando
 - Exibir a URL do banco de dados (automatizei a passagem da URL para o .env, mas anote esta URL para confirmar no .env)
-Obs.: se optar por rodar o banco de dados locamente, deve haver no .env a query param `?sslmode=disable` adicionada à URL do banco de dados. Verifique
+  Obs.: se optar por rodar o banco de dados locamente, deve haver no .env a query param `?sslmode=disable` adicionada à URL do banco de dados. Verifique
 
 ### 4. Configuração das Variáveis de Ambiente
 
@@ -56,7 +58,7 @@ APP_ENV="development"  # development or stage or production
 APP_PORT=5000
 
 # Configuração do Banco de Dados
-DATABASE_URL=postgresql://user:pass@localhost:5432/goledger_challenge?sslmode=disable
+DATABASE_URL="<url_de_conexao_do_banco_de_dados>"
 
 # Configurações da rede Besu
 BESU_URL=http://localhost:8545 # http://localhost:8545 for development env
@@ -90,6 +92,7 @@ A aplicação estará disponível em `http://localhost:8080`.
 Hyperledger Besu é um cliente Ethereum de código aberto desenvolvido pela ConsenSys e posteriormente para a Hyperledger Foundation. Besu implementa a Ethereum Virtual Machine (EVM) e suporta os principais algoritmos de consenso do Ethereum, incluindo Proof of Work (PoW) e Proof of Stake (PoS).
 
 As principais características do Besu incluem:
+
 - Compatibilidade total com a Ethereum MainNet
 - Suporte para redes privadas e de consórcio
 - Implementação completa da EVM
@@ -103,6 +106,7 @@ Ethereum é uma plataforma blockchain descentralizada que permite a execução d
 ### Besu como Cliente Ethereum
 
 Como cliente Ethereum, o Besu oferece:
+
 - Sincronização com a rede Ethereum
 - Validação de transações e blocos
 - Execução de smart contracts
@@ -117,11 +121,13 @@ A aplicação foi desenvolvida de maneira a se basear nos princípios da Clean A
 ### Camadas da Aplicação
 
 **Camada de Domínio (`domain/`)**
+
 - Contém as regras de negócio e entidades centrais da aplicação
 - Implementa o padrão Repository para desacoplar a lógica de negócio dos detalhes de implementação dos clientes da aplicação (SGBD Postgresql e cliente Ethereum Besu)
 - Organizada por funcionalidades (ex: `smart_contract/`)
 
 **Camada de Aplicação (`app/`)**
+
 - Responsável pela coordenação entre a camada de domínio e interfaces externas (requisições http)
 - Contém os casos de uso e serviços da aplicação
 - Organizada por funcionalidades seguindo a mesma estrutura de pastas da camada de domínio
@@ -129,6 +135,7 @@ A aplicação foi desenvolvida de maneira a se basear nos princípios da Clean A
 ### Padrão Repository
 
 Na camada de domínio, foi implementado o padrão Repository para abstrair a lógica de interação com os clientes externos:
+
 - **PostgreSQL**: Para persistência de dados
 - **Besu (Ethereum Client)**: Para interação com a blockchain
 
@@ -154,28 +161,34 @@ Este padrão permite que a lógica de negócio seja independente dos detalhes de
 A aplicação expõe quatro endpoints REST com tratamento personalizado de erros:
 
 ### GET /api/v1/smart-contract/
+
 **Função**: Recupera o valor atual armazenado no smart contract
 **Ação**: Realiza uma chamada de leitura diretamente na blockchain
 **Retorno**: JSON com o valor atual do contrato
 
 ### GET /api/v1/smart-contract/check-value/:value
+
 **Função**: Compara o valor do smart contract com o valor fornecido na rota
 **Parâmetros**: `value` - valor a ser comparado via URL parameter
 **Retorno**: JSON indicando se os valores são iguais (`true`/`false`)
 
 ### POST /api/v1/smart-contract/set-value
+
 **Função**: Define um novo valor no smart contract
 **Body**: JSON contendo:
+
 ```json
 {
   "value": 42,
   "privateKey": "..."
 }
 ```
+
 **Ação**: Envia uma transação para a blockchain atualizando o valor
 **Retorno**: JSON confirmando a transação
 
 ### POST /api/v1/smart-contract/sync
+
 **Função**: Sincroniza o valor do smart contract com o banco de dados PostgreSQL
 **Ação**: Lê o valor atual da blockchain e armazena/atualiza no banco de dados
 **Retorno**: JSON confirmando a sincronização
@@ -292,6 +305,8 @@ A aplicação utiliza a biblioteca go-ethereum para interagir com a rede Besu:
 ### Segurança
 
 - Chaves privadas são fornecidas via requisição (não armazenadas)
+- Variáveis de ambiente para evitar injeção de dados sensíveis no repositório
+- Recuperação de detalhes de ABI mediante leitura direta de arquivo fonte
 - Validação de entrada em todos os endpoints
 - Timeouts configurados para operações blockchain
 - Tratamento de conexões com banco de dados
