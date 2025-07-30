@@ -3,6 +3,7 @@ package dbConfig
 import (
 	"context"
 	"embed"
+	"log/slog"
 	"os"
 
 	"github.com/Masterminds/squirrel"
@@ -25,11 +26,13 @@ type DB struct {
 func (db *DB) Migrate() error {
 	driver, err := iofs.New(migrationsFS, "migrations")
 	if err != nil {
+		slog.Error("Error finding and opening migrations folder", "error", err)
 		return err
 	}
 
 	migrations, err := migrate.NewWithSourceInstance("iofs", driver, db.URL)
 	if err != nil {
+		slog.Error("Error generating migrations instance", "error", err)
 		return err
 	}
 

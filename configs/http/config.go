@@ -32,10 +32,12 @@ func (r *HTTP) Route(ctx *context.Context, db *dbConfig.DB, ethClient *besuConfi
 	// (DI) Dependency Injection
 	smartContractRepoBesu, err := smartContractDomain.NewRepositoryBesu(ctx, ethClient)
 	if err != nil {
+		slog.Error("Error building SmartContractRepositoryBesu", "error", err)
 		return err
 	}
 	smartContractRepoDB, err := smartContractDomain.NewRepositoryDB(ctx, db)
 	if err != nil {
+		slog.Error("Error building SmartContractRepositoryDB", "error", err)
 		return err
 	}
 	smartContractService := smartContractApp.NewService(smartContractRepoDB, smartContractRepoBesu)
