@@ -10,9 +10,12 @@ import (
 	"goledger-challenge-besu/configs/besu"
 	"goledger-challenge-besu/configs/db"
 	"goledger-challenge-besu/configs/http"
+	"goledger-challenge-besu/configs/log"
 )
 
 func main() {
+	logConfig.Config()
+
 	slog.Info("Starting the application...")
 	app, err := appConfig.New()
 	if err != nil {
@@ -62,7 +65,7 @@ func main() {
 	}
 
 	fmt.Println()
-	slog.Info("\nHTTP Server running\n", "address", fmt.Sprintf("http://%s", http.Address), "port", http.Port)
+	slog.Info("HTTP Server running 💻", "address", fmt.Sprintf("http://%s", http.Address), "port", http.Port)
 	fmt.Println()
 	err = http.Serve()
 	if err != nil {
